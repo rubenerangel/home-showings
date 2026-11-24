@@ -21,11 +21,18 @@ export interface Listing extends ListingFields {
     id: number;
 }
 
+export interface Photo {
+    id: number;
+    url: string;
+    room: string;
+}
+
 export interface ListingOptions {
     states: string[];
     timezones: string[];
     durations: number[];
     notices: number[];
+    rooms: string[];
 }
 
 export interface ListingLocks {

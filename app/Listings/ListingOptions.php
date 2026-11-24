@@ -3,6 +3,7 @@
 namespace App\Listings;
 
 use App\Enums\HouseTimezone;
+use App\Enums\Room;
 
 final class ListingOptions
 {
@@ -24,6 +25,7 @@ final class ListingOptions
             'timezones' => array_column(HouseTimezone::cases(), 'value'),
             'durations' => self::DURATIONS,
             'notices' => self::NOTICES,
+            'rooms' => array_column(Room::cases(), 'value'),
         ];
     }
 }

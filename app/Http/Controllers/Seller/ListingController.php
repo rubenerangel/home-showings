@@ -6,6 +6,8 @@ use App\Enums\HouseTimezone;
 use App\Http\Controllers\Controller;
 use App\Listings\ListingLocks;
 use App\Listings\ListingOptions;
+use App\Listings\ListingPhotos;
+use App\Models\Listing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +26,10 @@ class ListingController extends Controller
     public function index(Request $request): Response
     {
         return Inertia::render('seller/Home', [
-            'listings' => $request->user()->listings()->orderBy('id')->get(self::FIELDS),
+            'listings' => $request->user()->listings()->with('photos')->orderBy('id')->get()->map(fn (Listing $listing) => [
+                ...$listing->only(self::FIELDS),
+                'cover' => ($cover = $listing->photos->first()) ? ListingPhotos::present($cover) : null,
+            ]),
         ]);
     }
 
@@ -47,6 +52,7 @@ class ListingController extends Controller
 
         return Inertia::render('seller/listings/Edit', [
             'listing' => $listing->only(self::FIELDS),
+            'photos' => $listing->photos->map(ListingPhotos::present(...)),
             'locks' => ListingLocks::of($listing),
             'options' => ListingOptions::toArray(),
         ]);

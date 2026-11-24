@@ -14,3 +14,14 @@ const timezones: Record<string, string> = {
 };
 
 export const formatTimezone = (timezone: string) => timezones[timezone] ?? timezone;
+
+const rooms: Record<string, string> = {
+    exterior: 'Exterior',
+    living_room: 'Living room',
+    kitchen: 'Kitchen',
+    bedroom: 'Bedroom',
+    bathroom: 'Bathroom',
+    other: 'Other',
+};
+
+export const formatRoom = (room: string) => rooms[room] ?? room;
