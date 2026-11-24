@@ -48,9 +48,12 @@ class HistoryTest extends TestCase
     #[TestWith(['/'])]
     #[TestWith(['/login'])]
     #[TestWith(['/register'])]
-    public function test_a_guest_page_can_be_kept(string $path): void
+    public function test_a_guest_page_is_encrypted_too_but_can_be_kept(string $path): void
     {
-        $this->assertStringNotContainsString('no-store', $this->get($path)->assertOk()->headers->get('Cache-Control'));
+        $response = $this->get($path)->assertOk();
+
+        $this->assertTrue($this->page($response)['encryptHistory']);
+        $this->assertStringNotContainsString('no-store', $response->headers->get('Cache-Control'));
     }
 
     public function test_logging_out_ends_the_key_of_the_history(): void
@@ -80,6 +83,7 @@ class HistoryTest extends TestCase
         ])->assertRedirect('/buyer');
 
         $this->assertTrue($this->page($this->get('/buyer'))['clearHistory']);
+        $this->assertFalse($this->page($this->get('/buyer'))['clearHistory'] ?? false);
     }
 
     public function test_failing_to_log_in_does_not(): void
@@ -89,6 +93,13 @@ class HistoryTest extends TestCase
         $this->post('/session', ['email' => 'eve@example.com', 'password' => 'a long password'])->assertSessionHasErrors('email');
 
         $this->assertFalse($this->page($this->get('/buyer'))['clearHistory'] ?? false);
+    }
+
+    public function test_a_guest_who_fails_to_log_in_does_not_either(): void
+    {
+        $this->post('/session', ['email' => 'eve@example.com', 'password' => 'a long password'])->assertSessionHasErrors('email');
+
+        $this->assertFalse($this->page($this->get('/login'))['clearHistory'] ?? false);
     }
 
     /** @return array<string, mixed> */

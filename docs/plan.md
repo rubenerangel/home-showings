@@ -167,7 +167,7 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 58 | API: 50 to 52, 54, 55 and 57, with the codes of R17, and a limit of 60 a minute of its own for the public routes |
 | 59 | My homes by state and city, when there is more than one |
 | 60 | Screens: 320 px, keyboard, empty states, with and without photos |
-| 61 | Pages seen with a session are encrypted in the history of the browser and not kept in its cache. Signing in, registering and logging out end the key, so going back shows nothing of that account. Failing to log in does not. Pages of a guest can be kept |
+| 61 | Pages are encrypted in the history of the browser, and the ones seen with a session are not kept in its cache. Signing in, registering and logging out end the key, so going back shows nothing of that account. Failing to log in does not. Pages of a guest can be kept |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 
