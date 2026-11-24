@@ -132,7 +132,7 @@ Measured on WSL 2 with 8 CPUs and Docker 29.9. Sizes are from `docker images` an
 | Composer dependencies, without the development ones | 49.3 MB |
 | Alpine 3.22 | 8.97 MB |
 | Database folder, mostly the demo photos | 2 MB |
-| Everything else: code, configuration and built assets | under 1 MB |
+| Everything else: code, configuration and built assets | about 1 MB |
 
 | Build of `runtime` | Time |
 |---|---|
