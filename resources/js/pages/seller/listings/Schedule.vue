@@ -111,7 +111,7 @@ const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}
                 {{ listing.showing_duration_minutes }} minutes.
             </p>
 
-            <form class="mt-5 border-b border-curb pb-6" novalidate @submit.prevent="open">
+            <form class="mt-5 border-b border-curb pb-6" novalidate @input="form.clearErrors()" @submit.prevent="open">
                 <div class="grid gap-4 sm:grid-cols-3">
                     <FormField v-slot="{ control }" label="Date" name="date" :error="form.errors.date">
                         <input v-bind="control" v-model="form.date" type="date" :min="today" />

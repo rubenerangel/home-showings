@@ -2,6 +2,7 @@
 import { Link, useForm } from '@inertiajs/vue3';
 
 import { useAccountSubmit } from '../accountSubmit';
+import { clearEdited } from '../clearEdited';
 import AccountPage from '../components/AccountPage.vue';
 import FormField from '../components/FormField.vue';
 import type { SessionUser } from '../types';
@@ -18,6 +19,7 @@ const form = useForm<{ name: string; email: string; password: string; password_c
     password_confirmation: '',
     role: '',
 });
+const clearError = clearEdited(form);
 const { busy, submit } = useAccountSubmit(
     (options) => form.post('/register', options),
     () => form.reset('password', 'password_confirmation'),
@@ -26,7 +28,7 @@ const { busy, submit } = useAccountSubmit(
 
 <template>
     <AccountPage title="Create an account" lead="One account is either for buying or for selling.">
-        <form class="space-y-4" novalidate @submit.prevent="submit">
+        <form class="space-y-4" novalidate @input="clearError" @submit.prevent="submit">
             <fieldset :aria-describedby="form.errors.role ? 'role-error' : undefined">
                 <legend class="mb-1.5 text-[0.9375rem] font-bold">I am a</legend>
                 <div class="grid gap-3 sm:grid-cols-2">

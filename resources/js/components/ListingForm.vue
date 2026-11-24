@@ -4,6 +4,7 @@ import { watch } from 'vue';
 
 import { formatTimezone } from '../format';
 import type { Listing, ListingFields, ListingLocks, ListingOptions } from '../types';
+import { clearEdited } from '../clearEdited';
 import { focusFirstError } from '../focus';
 import FormField from './FormField.vue';
 
@@ -34,6 +35,8 @@ const form = useForm<FormFields>(
           },
 );
 
+const clearError = clearEdited(form);
+
 const locationHint = 'Locked while the home has upcoming showings.';
 const timezoneHint = 'Locked: the home has an open window or a showing.';
 
@@ -53,7 +56,7 @@ const submit = () => {
 </script>
 
 <template>
-    <form class="space-y-6" novalidate @submit.prevent="submit">
+    <form class="space-y-6" novalidate @input="clearError" @submit.prevent="submit">
         <fieldset class="panel p-5 sm:p-6">
             <legend class="float-left mb-4 w-full text-xl font-extrabold">Location</legend>
             <div class="clear-both grid gap-4 sm:grid-cols-6">

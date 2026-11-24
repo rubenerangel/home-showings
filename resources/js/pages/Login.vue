@@ -14,7 +14,7 @@ const { busy, submit } = useAccountSubmit(
 
 <template>
     <AccountPage title="Log in" lead="Sellers publish the times their home can be visited. Buyers book the ones that fit theirs.">
-        <form class="space-y-4" novalidate @submit.prevent="submit">
+        <form class="space-y-4" novalidate @input="form.clearErrors()" @submit.prevent="submit">
             <FormField v-slot="{ control }" label="Email" name="email" :error="form.errors.email">
                 <input v-bind="control" v-model="form.email" type="email" maxlength="255" autocomplete="username" autocapitalize="none" spellcheck="false" />
             </FormField>

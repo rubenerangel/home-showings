@@ -34,7 +34,7 @@ const format = (range: Range) => {
         <h1 class="title">Availability</h1>
         <p class="lead">When you can visit homes. Times are local to each home.</p>
 
-        <form class="panel mt-8 p-5 sm:p-6" novalidate @submit.prevent="add">
+        <form class="panel mt-8 p-5 sm:p-6" novalidate @input="form.clearErrors()" @submit.prevent="add">
             <div class="grid gap-4 sm:grid-cols-3">
                 <FormField v-slot="{ control }" label="Date" name="date" :error="form.errors.date">
                     <input v-bind="control" v-model="form.date" type="date" />
