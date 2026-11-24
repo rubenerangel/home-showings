@@ -58,6 +58,7 @@ services:
     pull_policy: build
     environment:
       <<: *app-environment
+      APP_ENV: testing
       DB_HOST: db-test
     depends_on:
       db-test:

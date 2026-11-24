@@ -1,0 +1,54 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\ShowingStatus;
+use Carbon\CarbonImmutable;
+use Database\Factories\ShowingFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property CarbonImmutable $starts_at
+ * @property CarbonImmutable $ends_at
+ * @property ShowingStatus $status
+ */
+#[Fillable(['showing_window_id', 'listing_id', 'buyer_id', 'starts_at', 'ends_at', 'status', 'cancelled_at'])]
+class Showing extends Model
+{
+    /** @use HasFactory<ShowingFactory> */
+    use HasFactory;
+
+    /** Written with the offset, so an instant in any zone is stored correctly. */
+    protected $dateFormat = 'Y-m-d H:i:sP';
+
+    protected function casts(): array
+    {
+        return [
+            'starts_at' => 'immutable_datetime',
+            'ends_at' => 'immutable_datetime',
+            'status' => ShowingStatus::class,
+            'cancelled_at' => 'immutable_datetime',
+        ];
+    }
+
+    /** @return BelongsTo<ShowingWindow, $this> */
+    public function window(): BelongsTo
+    {
+        return $this->belongsTo(ShowingWindow::class, 'showing_window_id');
+    }
+
+    /** @return BelongsTo<Listing, $this> */
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(Listing::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_id');
+    }
+}
