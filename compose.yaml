@@ -1,0 +1,76 @@
+name: home-showings
+
+x-app-environment: &app-environment
+  APP_NAME: Home Showings
+  APP_ENV: production
+  APP_URL: http://localhost:${APP_PORT:-8080}
+  DB_CONNECTION: pgsql
+  DB_HOST: db
+  DB_DATABASE: home_showings
+  DB_USERNAME: home_showings
+  DB_PASSWORD: home_showings
+  LOG_CHANNEL: stderr
+
+x-postgres: &postgres
+  image: postgres:18.7-alpine
+  environment:
+    POSTGRES_DB: home_showings
+    POSTGRES_USER: home_showings
+    POSTGRES_PASSWORD: home_showings
+  healthcheck:
+    # Over TCP: the temporary server used during initialization only listens on a socket.
+    test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "home_showings"]
+    interval: 1s
+    timeout: 3s
+    retries: 60
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    environment: *app-environment
+    ports:
+      # Loopback only: there are no passwords.
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
+    volumes:
+      - keys:/var/lib/home-showings
+      - photos:/app/storage/app/public
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:8080/up"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  db:
+    <<: *postgres
+    volumes:
+      - db:/var/lib/postgresql
+
+  test:
+    profiles: [test]
+    build:
+      context: .
+      target: test
+    pull_policy: build
+    environment:
+      <<: *app-environment
+      DB_HOST: db-test
+    depends_on:
+      db-test:
+        condition: service_healthy
+
+  db-test:
+    <<: *postgres
+    profiles: [test]
+    command: ["postgres", "-c", "fsync=off"]
+    tmpfs:
+      - /var/lib/postgresql
+
+volumes:
+  db:
+  keys:
+  photos:
