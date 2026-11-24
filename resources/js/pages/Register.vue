@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
 
+import { useAccountSubmit } from '../accountSubmit';
 import AccountPage from '../components/AccountPage.vue';
 import FormField from '../components/FormField.vue';
-import { focusFirstError } from '../focus';
-import { dropPush } from '../push';
 import type { SessionUser } from '../types';
 
 const roles: { value: SessionUser['role']; label: string; hint: string }[] = [
@@ -20,20 +18,10 @@ const form = useForm<{ name: string; email: string; password: string; password_c
     password_confirmation: '',
     role: '',
 });
-const busy = ref(false);
-
-const submit = async () => {
-    if (busy.value) return;
-    busy.value = true;
-    await dropPush();
-    form.post('/register', {
-        onError: focusFirstError,
-        onFinish: () => {
-            form.reset('password', 'password_confirmation');
-            busy.value = false;
-        },
-    });
-};
+const { busy, submit } = useAccountSubmit(
+    (options) => form.post('/register', options),
+    () => form.reset('password', 'password_confirmation'),
+);
 </script>
 
 <template>

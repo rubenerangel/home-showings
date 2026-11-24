@@ -1,27 +1,15 @@
 <script setup lang="ts">
 import { Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
 
+import { useAccountSubmit } from '../accountSubmit';
 import AccountPage from '../components/AccountPage.vue';
 import FormField from '../components/FormField.vue';
-import { focusFirstError } from '../focus';
-import { dropPush } from '../push';
 
 const form = useForm({ email: '', password: '' });
-const busy = ref(false);
-
-const submit = async () => {
-    if (busy.value) return;
-    busy.value = true;
-    await dropPush();
-    form.post('/session', {
-        onError: focusFirstError,
-        onFinish: () => {
-            form.reset('password');
-            busy.value = false;
-        },
-    });
-};
+const { busy, submit } = useAccountSubmit(
+    (options) => form.post('/session', options),
+    () => form.reset('password'),
+);
 </script>
 
 <template>
