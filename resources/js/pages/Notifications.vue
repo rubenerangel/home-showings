@@ -29,14 +29,25 @@ const received = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeSty
             <button v-if="hasUnread" type="button" class="btn btn-small" @click="readAll">Mark all as read</button>
         </div>
         <PushToggle v-if="pushPublicKey" :public-key="pushPublicKey" class="mt-6" />
-        <ul v-if="notifications.length" class="panel mt-6 divide-y divide-curb overflow-clip">
-            <li v-for="notification in notifications" :key="notification.id" class="px-5 py-4 sm:px-6" :class="{ 'shadow-[inset_5px_0_0_var(--color-caution)]': !notification.read }">
-                <p class="wrap-anywhere">
-                    <span class="font-extrabold">{{ notification.name }}</span> {{ actions[notification.kind] }} at {{ notification.address }}
-                    <span v-if="!notification.read" class="badge badge-caution ml-1">New</span>
-                </p>
-                <HouseTime :starts-at="notification.starts_at" :ends-at="notification.ends_at" :timezone="notification.timezone" class="mt-1" />
-                <p class="mt-1 text-sm text-gravel">Received {{ received.format(new Date(notification.created_at)) }}</p>
+        <ul v-if="notifications.length" class="mt-6 space-y-3.5">
+            <li v-for="notification in notifications" :key="notification.id" class="notice" :class="{ 'notice-unread': !notification.read }">
+                <span
+                    class="flex size-10 shrink-0 items-center justify-center rounded-full"
+                    :class="notification.kind === 'booked' ? 'bg-sign-wash text-sign-deep' : 'bg-stop-wash text-stop'"
+                >
+                    <svg viewBox="0 0 24 24" class="size-[1.4rem]" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 5.5h16v15H4zM8.5 3v4M15.5 3v4" />
+                        <path :d="notification.kind === 'booked' ? 'M8.5 13.5l2.5 2.5 4.5-4.8' : 'M9 10.8l6 6M15 10.8l-6 6'" />
+                    </svg>
+                </span>
+                <div class="min-w-0 grow">
+                    <p class="wrap-anywhere">
+                        <span class="font-extrabold">{{ notification.name }}</span> {{ actions[notification.kind] }} at {{ notification.address }}
+                        <span v-if="!notification.read" class="badge badge-caution ml-1">New</span>
+                    </p>
+                    <HouseTime :starts-at="notification.starts_at" :ends-at="notification.ends_at" :timezone="notification.timezone" class="mt-1" />
+                    <p class="mt-1 text-sm text-gravel">Received {{ received.format(new Date(notification.created_at)) }}</p>
+                </div>
             </li>
         </ul>
         <p v-else class="panel mt-6 px-6 py-10 text-center text-gravel">Nothing yet. Bookings and cancellations appear here.</p>

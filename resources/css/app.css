@@ -297,6 +297,76 @@
         }
     }
 
+    .push-panel {
+        transition: background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .push-panel-on {
+        @apply border-sign-line bg-sign-wash;
+    }
+
+    .switch {
+        @apply relative h-11 w-16 shrink-0 cursor-pointer rounded-full;
+
+        /* The track. The button around it is a comfortable target. */
+        &::before {
+            @apply absolute inset-x-0 inset-y-1.25 rounded-full bg-[#758c93];
+            content: '';
+            transition: background-color 160ms ease;
+        }
+
+        &[aria-checked='true']::before {
+            @apply bg-sign;
+        }
+
+        &[aria-disabled='true'] {
+            @apply cursor-not-allowed opacity-55;
+        }
+    }
+
+    .switch-thumb {
+        @apply absolute top-2 left-1 flex size-7 items-center justify-center rounded-full bg-white text-gravel;
+        box-shadow: 0 1px 3px rgb(23 37 42 / 0.35);
+        transition: transform 180ms var(--ease-out), color 160ms ease;
+    }
+
+    .switch[aria-checked='true'] .switch-thumb {
+        @apply text-sign;
+        transform: translateX(1.75rem);
+    }
+
+    .switch:active:not([aria-disabled='true']) .switch-thumb {
+        scale: 0.94;
+    }
+
+    /* How high it is says whether it was read. */
+    .notice {
+        @apply relative flex gap-4 rounded-[10px] border border-curb bg-white px-5 py-4 sm:px-6;
+        box-shadow: 0 1px 2px rgb(23 37 42 / 0.06), 0 6px 12px -8px rgb(23 37 42 / 0.26);
+
+        /* Both are faded, so reading them all only changes opacity. */
+        &::before,
+        &::after {
+            @apply pointer-events-none absolute opacity-0;
+            content: '';
+            transition: opacity 200ms var(--ease-out);
+        }
+
+        &::before {
+            @apply inset-y-0 left-0 w-1.25 rounded-l-[9px] bg-caution;
+        }
+
+        &::after {
+            @apply inset-0 rounded-[inherit];
+            box-shadow: 0 2px 4px rgb(23 37 42 / 0.05), 0 14px 22px -14px rgb(23 37 42 / 0.34);
+        }
+    }
+
+    .notice-unread::before,
+    .notice-unread::after {
+        @apply opacity-100;
+    }
+
     /* A few options side by side: all in sight, and chosen at once. */
     .choices {
         @apply grid auto-cols-fr grid-flow-col overflow-clip rounded-lg border-[1.5px] border-[#758c93] bg-white;

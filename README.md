@@ -109,6 +109,7 @@ Three Claude Code skills were used as criteria, and each change was then checked
 
 - **Forms.** One [FormField](resources/js/components/FormField.vue) and one [ChoiceField](resources/js/components/ChoiceField.vue) carry the label, the hint, the error and what screen readers need. After a refused form the focus goes to the first field to fix, and a message leaves when its field is edited.
 - **Photos.** Any order, by dragging with a mouse or with buttons. The new order shows at once and goes back if it is not accepted. Removing asks over the photo, so nothing else moves.
+- **Notifications.** Each one is a card with its own shadow, and the height says something: what was not read is higher, and settles when it is read. An icon tells a booking from a cancellation, so it is not only a color. Push is a switch that says On, Off or Blocked in words, color and shape, and keeps the focus while it works.
 - **Accessible.** Keyboard for everything that is dragged or swiped, visible focus also in forced colors, reduced motion respected, controls of at least 44 px with touch, and no horizontal scroll from 320 px.
 
 Dragging was tried in Chromium. With touch, the buttons are the way.
