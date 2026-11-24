@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Scheduling\Interval;
+use App\Scheduling\Slot;
+use App\Scheduling\Slots;
 use Carbon\CarbonImmutable;
 use Database\Factories\ShowingWindowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -32,6 +35,20 @@ class ShowingWindow extends Model
             'duration_minutes' => 'integer',
             'closed_at' => 'immutable_datetime',
         ];
+    }
+
+    public function interval(): Interval
+    {
+        return new Interval($this->local_starts_at, $this->local_ends_at);
+    }
+
+    /** @return list<Slot> */
+    public function slots(): array
+    {
+        return array_map(
+            fn (Interval $local) => new Slot($this, $local),
+            (new Slots($this->interval(), $this->duration_minutes))->all(),
+        );
     }
 
     /** @return BelongsTo<Listing, $this> */

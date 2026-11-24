@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use App\Enums\ShowingStatus;
+use App\Scheduling\Slot;
 use Carbon\CarbonImmutable;
 use Database\Factories\ShowingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +35,30 @@ class Showing extends Model
             'status' => ShowingStatus::class,
             'cancelled_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * Confirmed and not over.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function active(Builder $query, CarbonImmutable $now): void
+    {
+        $query->where('status', ShowingStatus::Confirmed)->where('ends_at', '>', $now);
+    }
+
+    /**
+     * Whether this showing takes the slot of its listing: any confirmed one that overlaps
+     * it, or one the seller cancelled in the same window (R5, R8).
+     */
+    public function blocks(Slot $slot): bool
+    {
+        return $slot->overlaps($this) && match ($this->status) {
+            ShowingStatus::Confirmed => true,
+            ShowingStatus::CancelledBySeller => $this->showing_window_id === $slot->window->id,
+            ShowingStatus::CancelledByBuyer => false,
+        };
     }
 
     /** @return BelongsTo<ShowingWindow, $this> */

@@ -46,7 +46,7 @@ class Listing extends Model
     /** @return HasMany<ShowingWindow, $this> */
     public function windows(): HasMany
     {
-        return $this->hasMany(ShowingWindow::class);
+        return $this->hasMany(ShowingWindow::class)->chaperone();
     }
 
     /** @return HasMany<Showing, $this> */

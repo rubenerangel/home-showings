@@ -15,6 +15,12 @@ class ListingPhoto extends Model
         return ['room' => Room::class, 'position' => 'integer'];
     }
 
+    /** Relative, so it works on whatever host and port the application is served from. */
+    public function url(): string
+    {
+        return '/storage/'.$this->path;
+    }
+
     /** @return BelongsTo<Listing, $this> */
     public function listing(): BelongsTo
     {

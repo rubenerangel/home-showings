@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\Role;
+use App\Scheduling\Availability;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,6 +35,12 @@ class User extends Authenticatable
     public function availabilityRanges(): HasMany
     {
         return $this->hasMany(AvailabilityRange::class, 'buyer_id');
+    }
+
+    /** Past ranges are left out (R12). */
+    public function availability(): Availability
+    {
+        return new Availability($this->availabilityRanges()->current()->get()->map->interval());
     }
 
     /** @return HasMany<Showing, $this> */
