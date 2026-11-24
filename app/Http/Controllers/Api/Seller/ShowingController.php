@@ -15,7 +15,7 @@ class ShowingController extends Controller
 {
     public function cancel(Request $request, string $showing, CancelShowing $cancelShowing, ApiPresenter $presenter): JsonResponse
     {
-        $showing = Showing::query()->whereRelation('listing', 'seller_id', $request->user()->id)->findOrFail($showing);
+        $showing = Showing::ofSeller($request->user())->findOrFail($showing);
         $cancelShowing->handle($showing, Role::Seller);
 
         return response()->json(['data' => $presenter->showingWithBuyer($showing->refresh(), CarbonImmutable::now())]);

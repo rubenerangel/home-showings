@@ -6,6 +6,7 @@ use App\Http\ApiPresenter;
 use App\Http\Controllers\Controller;
 use App\Http\LocalIntervalInput;
 use App\Scheduling\AddAvailability;
+use App\Scheduling\RemoveAvailability;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -26,9 +27,9 @@ class AvailabilityController extends Controller
         return response()->json(['data' => $this->presenter->range($range)], 201);
     }
 
-    public function destroy(Request $request, string $range): Response
+    public function destroy(Request $request, string $range, RemoveAvailability $removeAvailability): Response
     {
-        $request->user()->availabilityRanges()->findOrFail($range)->delete();
+        $removeAvailability->handle($request->user()->availabilityRanges()->findOrFail($range));
 
         return response()->noContent();
     }

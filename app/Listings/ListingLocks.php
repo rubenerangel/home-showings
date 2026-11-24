@@ -2,24 +2,12 @@
 
 namespace App\Listings;
 
-use App\Enums\ShowingStatus;
 use App\Models\Listing;
 
-/** R13: what cannot change now. To rely on the answer, hold the lock on the listing row. */
+/** R13: what cannot change now. */
 final readonly class ListingLocks
 {
-    private function __construct(public bool $location, public bool $timezone) {}
-
-    public static function of(Listing $listing): self
-    {
-        return new self(
-            location: $listing->showings()
-                ->where('status', ShowingStatus::Confirmed)
-                ->where('ends_at', '>', now())
-                ->exists(),
-            timezone: $listing->windows()->whereNull('closed_at')->exists() || $listing->showings()->exists(),
-        );
-    }
+    public function __construct(public bool $location, public bool $timezone) {}
 
     /**
      * @param  array<string, mixed>  $data

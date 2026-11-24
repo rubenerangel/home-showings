@@ -7,7 +7,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /** Closes a window that has no active showing (R7). */
-final class CloseWindow
+class CloseWindow
 {
     public function handle(ShowingWindow $window): void
     {

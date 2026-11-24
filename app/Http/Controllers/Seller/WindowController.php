@@ -25,9 +25,7 @@ class WindowController extends Controller
 
     public function close(Request $request, int $window, CloseWindow $closeWindow): RedirectResponse
     {
-        $closeWindow->handle(ShowingWindow::query()
-            ->whereRelation('listing', 'seller_id', $request->user()->id)
-            ->findOrFail($window));
+        $closeWindow->handle(ShowingWindow::ofSeller($request->user())->findOrFail($window));
         Inertia::flash('message', 'Window closed.');
 
         return back();

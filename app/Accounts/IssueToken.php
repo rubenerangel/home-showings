@@ -5,7 +5,7 @@ namespace App\Accounts;
 use App\Models\User;
 use Laravel\Sanctum\NewAccessToken;
 
-final class IssueToken
+class IssueToken
 {
     private const DAYS = 30;
 

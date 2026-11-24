@@ -8,6 +8,8 @@ use App\Scheduling\Slots;
 use Carbon\CarbonImmutable;
 use Database\Factories\ShowingWindowFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +37,17 @@ class ShowingWindow extends Model
             'duration_minutes' => 'integer',
             'closed_at' => 'immutable_datetime',
         ];
+    }
+
+    /**
+     * Of the listings of a seller (R10).
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function ofSeller(Builder $query, User $seller): void
+    {
+        $query->whereRelation('listing', 'seller_id', $seller->id);
     }
 
     public function interval(): Interval

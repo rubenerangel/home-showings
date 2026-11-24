@@ -12,7 +12,7 @@ use RuntimeException;
 use Throwable;
 
 /** R14. */
-final class ListingPhotos
+class ListingPhotos
 {
     public const MAX = 5;
 
@@ -48,6 +48,11 @@ final class ListingPhotos
 
             throw $exception;
         }
+    }
+
+    public function changeRoom(ListingPhoto $photo, string $room): void
+    {
+        $photo->update(['room' => $room]);
     }
 
     public function remove(ListingPhoto $photo): void

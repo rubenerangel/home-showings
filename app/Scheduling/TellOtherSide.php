@@ -8,7 +8,7 @@ use App\Notifications\ShowingChanged;
 use App\Notifications\ShowingChangedPush;
 
 /** Notifies the other side, inside the transaction of the action that calls it. */
-final class TellOtherSide
+class TellOtherSide
 {
     public function that(ShowingEvent $event, Showing $showing): void
     {

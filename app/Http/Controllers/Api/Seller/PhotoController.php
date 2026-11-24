@@ -23,10 +23,10 @@ class PhotoController extends Controller
         return response()->json(['data' => $listing->photos->map($this->presenter->photo(...))], 201);
     }
 
-    public function update(Request $request, string $listing, string $photo): JsonResponse
+    public function update(Request $request, string $listing, string $photo, ListingPhotos $listingPhotos): JsonResponse
     {
         $photo = $this->find($request, $listing, $photo);
-        $photo->update(PhotoInput::room($request));
+        $listingPhotos->changeRoom($photo, PhotoInput::room($request));
 
         return response()->json(['data' => $this->presenter->photo($photo)]);
     }

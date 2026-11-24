@@ -7,7 +7,7 @@ use App\Models\User;
 use Laravel\Sanctum\NewAccessToken;
 
 /** A client of the API has no page to resolve a relative address against. */
-final class ApiPresenter extends Presenter
+class ApiPresenter extends Presenter
 {
     /** @return array<string, mixed> */
     public function user(User $user): array

@@ -16,7 +16,7 @@ class ListingController extends Controller
         $buyer = $request->user();
 
         return Inertia::render('buyer/Listings', [
-            'hasAvailability' => $buyer->availabilityRanges()->current()->exists(),
+            'hasAvailability' => $buyer->hasAvailability(),
             'listings' => $openSlots->forBuyer($buyer)->map($presenter->match(...)),
         ]);
     }

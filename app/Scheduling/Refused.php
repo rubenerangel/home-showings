@@ -16,28 +16,18 @@ final class Refused extends RuntimeException
     }
 
     /**
-     * Turns an exclusion violation into the refusal of its constraint. Any other error passes through.
+     * The refusal of the exclusion constraint that was violated, or null for any other error.
      *
-     * @template T
-     *
-     * @param  callable(): T  $write
      * @param  array<string, Refusal>  $reasons  by constraint name
-     * @return T
      */
-    public static function onConflict(callable $write, array $reasons): mixed
+    public static function fromConflict(QueryException $exception, array $reasons): ?self
     {
-        try {
-            return $write();
-        } catch (QueryException $exception) {
-            if ($exception->getCode() === self::EXCLUSION_VIOLATION) {
-                foreach ($reasons as $constraint => $reason) {
-                    if (str_contains($exception->getMessage(), $constraint)) {
-                        throw new self($reason);
-                    }
-                }
-            }
-
-            throw $exception;
+        if ($exception->getCode() !== self::EXCLUSION_VIOLATION) {
+            return null;
         }
+
+        $constraint = array_find(array_keys($reasons), fn (string $name) => str_contains($exception->getMessage(), $name));
+
+        return $constraint === null ? null : new self($reasons[$constraint]);
     }
 }

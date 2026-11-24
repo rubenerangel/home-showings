@@ -26,7 +26,7 @@ class WindowController extends Controller
 
     public function close(Request $request, string $window, CloseWindow $closeWindow): JsonResponse
     {
-        $window = ShowingWindow::query()->whereRelation('listing', 'seller_id', $request->user()->id)->findOrFail($window);
+        $window = ShowingWindow::ofSeller($request->user())->findOrFail($window);
         $closeWindow->handle($window);
 
         return response()->json(['data' => $this->presenter->window($window->refresh())]);

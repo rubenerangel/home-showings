@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\HouseTimezone;
 use App\Scheduling\HouseClock;
 use App\Scheduling\Interval;
 use Carbon\CarbonImmutable;
@@ -39,7 +38,7 @@ class AvailabilityRange extends Model
     #[Scope]
     protected function current(Builder $query): void
     {
-        $query->where('local_ends_at', '>', HouseClock::localNow(HouseTimezone::Pacific));
+        $query->where('local_ends_at', '>', HouseClock::lastLocalNow());
     }
 
     public function interval(): Interval

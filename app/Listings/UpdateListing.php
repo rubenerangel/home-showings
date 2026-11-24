@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /** Edits a listing of the seller, with what is locked now (R13). */
-final class UpdateListing
+class UpdateListing
 {
+    public function __construct(private readonly ReadLocks $readLocks) {}
+
     /** @param array<string, mixed> $data already validated */
     public function handle(User $seller, string $listingId, array $data): Listing
     {
@@ -18,7 +20,7 @@ final class UpdateListing
             // so both wait for this transaction, or this one waits and then sees them.
             $listing = $seller->listings()->lockForUpdate()->findOrFail($listingId);
 
-            if ($refusals = ListingLocks::of($listing)->refusals($listing, $data)) {
+            if ($refusals = $this->readLocks->of($listing)->refusals($listing, $data)) {
                 throw ValidationException::withMessages($refusals);
             }
             $listing->update($data);

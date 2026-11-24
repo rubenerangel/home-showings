@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 /** The slots each listing has open for a buyer (R5), in the order of R15. */
-final class OpenSlots
+class OpenSlots
 {
     /** @return Collection<int, ListingMatch> */
     public function forBuyer(User $buyer): Collection

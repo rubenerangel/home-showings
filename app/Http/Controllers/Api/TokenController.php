@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Accounts\CheckCredentials;
 use App\Accounts\IssueToken;
+use App\Accounts\RevokeTokens;
 use App\Http\AccountInput;
 use App\Http\ApiPresenter;
 use App\Http\Controllers\Controller;
@@ -21,16 +22,16 @@ class TokenController extends Controller
         return response()->json(['data' => $presenter->token($user, $issueToken->handle($user, $data['device_name']))], 201);
     }
 
-    public function destroyCurrent(Request $request): Response
+    public function destroyCurrent(Request $request, RevokeTokens $revokeTokens): Response
     {
-        $request->user()->currentAccessToken()->delete();
+        $revokeTokens->current($request->user());
 
         return response()->noContent();
     }
 
-    public function destroyAll(Request $request): Response
+    public function destroyAll(Request $request, RevokeTokens $revokeTokens): Response
     {
-        $request->user()->tokens()->delete();
+        $revokeTokens->all($request->user());
 
         return response()->noContent();
     }

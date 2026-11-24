@@ -14,9 +14,7 @@ class ShowingController extends Controller
 {
     public function cancel(Request $request, int $showing, CancelShowing $cancelShowing): RedirectResponse
     {
-        $cancelShowing->handle(Showing::query()
-            ->whereRelation('listing', 'seller_id', $request->user()->id)
-            ->findOrFail($showing), Role::Seller);
+        $cancelShowing->handle(Showing::ofSeller($request->user())->findOrFail($showing), Role::Seller);
         Inertia::flash('message', 'Showing cancelled. The buyer has been notified.');
 
         return back();

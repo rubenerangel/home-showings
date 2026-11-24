@@ -140,6 +140,7 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 42 | A slot booked through one door is refused through the other. The web tests do not change |
 | 43 | Request 60 is accepted and 61 is a 429, two tokens of one account share the limit, and it ends after a minute |
 | 44 | The README documents every route (compared once with `route:list`) and has a curl example that was run against the demo data |
+| 45 | The design rules of CLAUDE.md that can be read from the code: an injected service is not `final`, nothing is looked up with `app()`, `resolve()` or `new`, a static method does not touch the database, a controller does not write, and only looks up by id what belongs to its user (R10) |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 

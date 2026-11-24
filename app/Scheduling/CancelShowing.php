@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
  * Cancels a confirmed showing that has not started, once (R8). Its own row is enough to lock:
  * a booking that still reads it as confirmed is refused, which is the safe answer.
  */
-final class CancelShowing
+class CancelShowing
 {
     public function __construct(private readonly TellOtherSide $tellOtherSide) {}
 
@@ -26,7 +26,7 @@ final class CancelShowing
             if ($showing->status !== ShowingStatus::Confirmed) {
                 throw new Refused(Refusal::ShowingCancelled);
             }
-            if ($showing->starts_at <= $now) {
+            if (! $showing->canBeCancelledAt($now)) {
                 throw new Refused(Refusal::ShowingStarted);
             }
 

@@ -31,11 +31,11 @@ class PushSubscriptionController extends Controller
         return response()->noContent();
     }
 
-    public function destroy(Request $request): Response
+    public function destroy(Request $request, BrowserSubscription $browserSubscription): Response
     {
         $data = $request->validate(['endpoint' => ['required', 'string']]);
 
-        $request->user()->deletePushSubscription($data['endpoint']);
+        $browserSubscription->remove($request->user(), $data['endpoint']);
 
         return response()->noContent();
     }

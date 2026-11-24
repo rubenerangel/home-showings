@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
@@ -37,6 +36,12 @@ class User extends Authenticatable
         return $this->hasMany(Listing::class, 'seller_id');
     }
 
+    /** @return Collection<int, Listing> */
+    public function listingsWithPhotos(): Collection
+    {
+        return $this->listings()->with('photos')->orderBy('id')->get();
+    }
+
     /** @return HasMany<AvailabilityRange, $this> */
     public function availabilityRanges(): HasMany
     {
@@ -47,6 +52,11 @@ class User extends Authenticatable
     public function currentAvailability(): Collection
     {
         return $this->availabilityRanges()->current()->orderBy('local_starts_at')->orderBy('id')->get();
+    }
+
+    public function hasAvailability(): bool
+    {
+        return $this->availabilityRanges()->current()->exists();
     }
 
     /** Past ranges are left out (R12). */
@@ -65,11 +75,5 @@ class User extends Authenticatable
     public function orderedShowings(): Collection
     {
         return $this->showings()->with('listing')->orderBy('starts_at')->orderBy('id')->get();
-    }
-
-    /** @return Collection<int, DatabaseNotification> */
-    public function latestNotifications(): Collection
-    {
-        return $this->notifications()->limit(50)->get();
     }
 }

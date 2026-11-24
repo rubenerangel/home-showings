@@ -8,6 +8,7 @@ use App\Models\Showing;
 use App\Models\ShowingWindow;
 use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  * serializes booking and closing. Always in that order, so two bookings cannot wait for each
  * other. The exclusion constraints are the second line of defense (D21).
  */
-final class BookShowing
+class BookShowing
 {
     public function __construct(private readonly TellOtherSide $tellOtherSide) {}
 
@@ -37,17 +38,21 @@ final class BookShowing
             throw new Refused($reason);
         }
 
-        $showing = Refused::onConflict(fn () => Showing::create([
-            'showing_window_id' => $window->id,
-            'listing_id' => $window->listing_id,
-            'buyer_id' => $buyer->id,
-            'starts_at' => $slot->startsAt,
-            'ends_at' => $slot->endsAt,
-            'status' => ShowingStatus::Confirmed,
-        ]), [
-            'showings_listing_no_overlap' => Refusal::JustBooked,
-            'showings_buyer_no_overlap' => Refusal::Overlaps,
-        ]);
+        try {
+            $showing = Showing::create([
+                'showing_window_id' => $window->id,
+                'listing_id' => $window->listing_id,
+                'buyer_id' => $buyer->id,
+                'starts_at' => $slot->startsAt,
+                'ends_at' => $slot->endsAt,
+                'status' => ShowingStatus::Confirmed,
+            ]);
+        } catch (QueryException $exception) {
+            throw Refused::fromConflict($exception, [
+                'showings_listing_no_overlap' => Refusal::JustBooked,
+                'showings_buyer_no_overlap' => Refusal::Overlaps,
+            ]) ?? $exception;
+        }
         $this->tellOtherSide->that(ShowingEvent::Booked, $showing);
 
         return $showing;

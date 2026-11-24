@@ -2,7 +2,6 @@
 
 namespace App\Http;
 
-use App\Enums\ShowingStatus;
 use App\Models\Listing;
 use App\Models\Showing;
 use App\Models\ShowingWindow;
@@ -11,7 +10,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /** The open windows and the showings of one home. */
-final class SchedulePresenter
+class SchedulePresenter
 {
     public function __construct(private readonly Presenter $presenter) {}
 
@@ -46,7 +45,7 @@ final class SchedulePresenter
     private function showings(Listing $listing, CarbonImmutable $now): Collection
     {
         [$upcoming, $rest] = $listing->showings()->with(['buyer', 'listing'])->orderBy('starts_at')->orderBy('id')->get()
-            ->partition(fn (Showing $showing) => $showing->status === ShowingStatus::Confirmed && $showing->ends_at > $now);
+            ->partition(fn (Showing $showing) => $showing->isActiveAt($now));
 
         return $upcoming->concat($rest->reverse())->values()
             ->map(fn (Showing $showing) => $this->presenter->showingWithBuyer($showing, $now));

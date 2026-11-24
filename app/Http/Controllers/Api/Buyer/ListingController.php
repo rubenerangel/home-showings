@@ -16,7 +16,7 @@ class ListingController extends Controller
 
         return response()->json([
             'data' => $openSlots->forBuyer($buyer)->map($presenter->match(...)),
-            'has_availability' => $buyer->availabilityRanges()->current()->exists(),
+            'has_availability' => $buyer->hasAvailability(),
         ]);
     }
 }

@@ -29,10 +29,9 @@ final class PhotoInput
         ])['photos'];
     }
 
-    /** @return array{room: string} */
-    public static function room(Request $request): array
+    public static function room(Request $request): string
     {
-        return $request->validate(['room' => self::roomRules()]);
+        return $request->validate(['room' => self::roomRules()])['room'];
     }
 
     /** @return list<mixed> */

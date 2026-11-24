@@ -48,6 +48,29 @@ class Showing extends Model
         $query->where('status', ShowingStatus::Confirmed)->where('ends_at', '>', $now);
     }
 
+    /** The same rule as the scope above, for a showing that is already here. */
+    public function isActiveAt(CarbonImmutable $now): bool
+    {
+        return $this->status === ShowingStatus::Confirmed && $this->ends_at > $now;
+    }
+
+    /** R8. */
+    public function canBeCancelledAt(CarbonImmutable $now): bool
+    {
+        return $this->status === ShowingStatus::Confirmed && $this->starts_at > $now;
+    }
+
+    /**
+     * Of the listings of a seller (R10).
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function ofSeller(Builder $query, User $seller): void
+    {
+        $query->whereRelation('listing', 'seller_id', $seller->id);
+    }
+
     /**
      * Whether this showing takes the slot of its listing: any confirmed one that overlaps
      * it, or one the seller cancelled in the same window (R5, R8).

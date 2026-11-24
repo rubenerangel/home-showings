@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Contracts\Session\Session;
 
 /** Remembers in the session which push subscription is of this browser, to remove it when the user changes. */
-final class BrowserSubscription
+class BrowserSubscription
 {
     private const KEY = 'push_endpoint';
 
@@ -17,11 +17,16 @@ final class BrowserSubscription
         $session->put(self::KEY, $subscription['endpoint']);
     }
 
+    public function remove(User $user, string $endpoint): void
+    {
+        $user->deletePushSubscription($endpoint);
+    }
+
     public function forget(?User $user, Session $session): void
     {
         $endpoint = $session->pull(self::KEY);
         if ($user !== null && $endpoint !== null) {
-            $user->deletePushSubscription($endpoint);
+            $this->remove($user, $endpoint);
         }
     }
 }

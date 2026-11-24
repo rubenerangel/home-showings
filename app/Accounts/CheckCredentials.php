@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 /** Who has this email and password. The failures of the web and of the API count together. */
-final class CheckCredentials
+class CheckCredentials
 {
     private const MAX_FAILURES = 5;
 

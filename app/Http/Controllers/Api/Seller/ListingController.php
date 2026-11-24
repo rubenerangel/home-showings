@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Api\Seller;
 use App\Http\ApiPresenter;
 use App\Http\Controllers\Controller;
 use App\Http\ListingInput;
-use App\Listings\ListingLocks;
+use App\Listings\CreateListing;
 use App\Listings\ListingOptions;
+use App\Listings\ReadLocks;
 use App\Listings\UpdateListing;
 use App\Models\Listing;
 use Illuminate\Http\JsonResponse;
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
 
 class ListingController extends Controller
 {
-    public function __construct(private readonly ApiPresenter $presenter) {}
+    public function __construct(private readonly ApiPresenter $presenter, private readonly ReadLocks $readLocks) {}
 
     public function options(): JsonResponse
     {
@@ -24,13 +25,13 @@ class ListingController extends Controller
     public function index(Request $request): JsonResponse
     {
         return response()->json([
-            'data' => $request->user()->listings()->with('photos')->orderBy('id')->get()->map($this->presenter->listingWithCover(...)),
+            'data' => $request->user()->listingsWithPhotos()->map($this->presenter->listingWithCover(...)),
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, CreateListing $createListing): JsonResponse
     {
-        return $this->answer($request->user()->listings()->create(ListingInput::from($request)), 201);
+        return $this->answer($createListing->handle($request->user(), ListingInput::from($request)), 201);
     }
 
     public function show(Request $request, string $listing): JsonResponse
@@ -51,7 +52,7 @@ class ListingController extends Controller
         return response()->json(['data' => [
             ...$this->presenter->listing($listing),
             'photos' => $listing->photos->map($this->presenter->photo(...)),
-            'locks' => ListingLocks::of($listing),
+            'locks' => $this->readLocks->of($listing),
         ]], $status);
     }
 }

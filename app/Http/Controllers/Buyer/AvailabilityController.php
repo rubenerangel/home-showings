@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\LocalIntervalInput;
 use App\Http\Presenter;
 use App\Scheduling\AddAvailability;
+use App\Scheduling\RemoveAvailability;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -28,9 +29,9 @@ class AvailabilityController extends Controller
         return back();
     }
 
-    public function destroy(Request $request, int $range): RedirectResponse
+    public function destroy(Request $request, int $range, RemoveAvailability $removeAvailability): RedirectResponse
     {
-        $request->user()->availabilityRanges()->findOrFail($range)->delete();
+        $removeAvailability->handle($request->user()->availabilityRanges()->findOrFail($range));
         Inertia::flash('message', 'Availability removed.');
 
         return back();

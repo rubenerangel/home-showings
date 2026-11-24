@@ -22,10 +22,10 @@ class PhotoController extends Controller
         return redirect()->route('seller.listings.edit', $listing->id);
     }
 
-    public function update(Request $request, string $listing, string $photo): RedirectResponse
+    public function update(Request $request, string $listing, string $photo, ListingPhotos $listingPhotos): RedirectResponse
     {
         $photo = $request->user()->listings()->findOrFail($listing)->photos()->findOrFail($photo);
-        $photo->update(PhotoInput::room($request));
+        $listingPhotos->changeRoom($photo, PhotoInput::room($request));
         Inertia::flash('message', 'Room saved.');
 
         return redirect()->route('seller.listings.edit', $listing);

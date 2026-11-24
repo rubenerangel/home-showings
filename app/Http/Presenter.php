@@ -2,7 +2,6 @@
 
 namespace App\Http;
 
-use App\Enums\ShowingStatus;
 use App\Models\AvailabilityRange;
 use App\Models\Listing;
 use App\Models\ListingPhoto;
@@ -70,16 +69,14 @@ class Presenter
     /** @return array<string, mixed> as the buyer sees it */
     public function showing(Showing $showing, CarbonImmutable $now): array
     {
-        $confirmed = $showing->status === ShowingStatus::Confirmed;
-
         return [
             'id' => $showing->id,
             'listing' => $showing->listing->only('address', 'city', 'state', 'timezone'),
             'starts_at' => $showing->starts_at->toIso8601ZuluString(),
             'ends_at' => $showing->ends_at->toIso8601ZuluString(),
             'status' => $showing->status,
-            'upcoming' => $confirmed && $showing->ends_at > $now,
-            'cancellable' => $confirmed && $showing->starts_at > $now,
+            'upcoming' => $showing->isActiveAt($now),
+            'cancellable' => $showing->canBeCancelledAt($now),
         ];
     }
 

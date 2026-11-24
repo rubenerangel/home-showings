@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Validation\ValidationException;
 
-final class RegisterUser
+class RegisterUser
 {
     /** @param array<string, mixed> $data already validated */
     public function handle(array $data): User

@@ -21,6 +21,12 @@ final class HouseClock
         return $midnight->utcOffset() !== $midnight->addDay()->utcOffset();
     }
 
+    /** What the clock shows right now in the last of the supported zones: what is over there is over everywhere (R12). */
+    public static function lastLocalNow(): CarbonImmutable
+    {
+        return self::localNow(HouseTimezone::Pacific);
+    }
+
     /** What the clock shows right now, comparable with the local columns. */
     public static function localNow(HouseTimezone $timezone): CarbonImmutable
     {
