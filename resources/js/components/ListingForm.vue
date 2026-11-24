@@ -115,7 +115,14 @@ const submit = () => {
                 <FormField v-slot="{ control }" label="Bathrooms" name="bathrooms" :error="form.errors.bathrooms">
                     <input v-bind="control" v-model="form.bathrooms" type="number" min="0.5" step="0.5" inputmode="decimal" />
                 </FormField>
-                <FormField v-slot="{ control }" label="Short description (optional)" name="description" :error="form.errors.description" class="sm:col-span-3">
+                <FormField
+                    v-slot="{ control }"
+                    label="Short description (optional)"
+                    name="description"
+                    :error="form.errors.description"
+                    :hint="`${(form.description ?? '').length.toLocaleString('en-US')} of 1,000 characters`"
+                    class="sm:col-span-3"
+                >
                     <textarea v-bind="control" v-model="form.description" rows="3" maxlength="1000" />
                 </FormField>
             </div>
