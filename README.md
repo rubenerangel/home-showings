@@ -95,6 +95,24 @@ Every query starts from the signed-in user, for example `$request->user()->listi
 
 Passwords are stored with bcrypt. Five failures in a minute for one email and address stop that email from that address until the minute ends. An unknown email and a wrong password get the same answer. The session id changes when logging in.
 
+## Interface
+
+The visual system is the US street sign: green guides, yellow warns, red stops, and [Overpass](#credits) is derived from the lettering of those signs. The sign with the address is the one bold element, and everything around it is quiet. The tokens and components are in [app.css](resources/css/app.css), without a component library.
+
+Three Claude Code skills were used as criteria, and each change was then checked in a browser:
+
+| Skill | What it was used for | What came out of it |
+|---|---|---|
+| `frontend-design` | Direction: refine what exists instead of adding decoration | A few options side by side instead of a menu (duration, notice), a lock inside what cannot change, one chevron everywhere, the photo and its room as one piece |
+| `web-design-guidelines` | Reviewing the forms against its rules | The price formatted while it is typed, "Saving…" while it works, a warning before losing changes, `Select…`, errors with an icon and not only a color |
+| `emil-design-eng` | Movement and touch | Only `transform`, `opacity` and colors move, under 250 ms, leaving faster than entering. Photos slide to their new place with a mouse and do not with a keyboard. Hover effects only where there is a hover. Buttons answer to the press |
+
+- **Forms.** One [FormField](resources/js/components/FormField.vue) and one [ChoiceField](resources/js/components/ChoiceField.vue) carry the label, the hint, the error and what screen readers need. After a refused form the focus goes to the first field to fix, and a message leaves when its field is edited.
+- **Photos.** Any order, by dragging with a mouse or with buttons. The new order shows at once and goes back if it is not accepted. Removing asks over the photo, so nothing else moves.
+- **Accessible.** Keyboard for everything that is dragged or swiped, visible focus also in forced colors, reduced motion respected, controls of at least 44 px with touch, and no horizontal scroll from 320 px.
+
+Dragging was tried in Chromium. With touch, the buttons are the way.
+
 ## REST API
 
 Everything the pages do, except subscribing a browser to push. Under `/api/v1`, with the same rules, messages and permissions. Try it with the demo data:
@@ -215,7 +233,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 2. For matching, booking, notifications, push, accounts and the API: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
-5. Screens and push were also driven in real browsers. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
+5. Screens and push were also driven in real browsers, with mouse, keyboard and touch. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
 
 ## Known limitations
 
