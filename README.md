@@ -22,7 +22,7 @@ Open http://localhost:8080. The first start generates the application and push k
 | Stop | `docker compose down` |
 | Stop and delete all data | `docker compose --profile test down --volumes` |
 
-The tests use their own database server, in memory, so they never touch the data of the application.
+`vue-tsc` and the Node tests run while the image of `test` is built, so Docker skips them when nothing under `resources/` or the manifests changed. Pint and PHPUnit run in the container every time. The tests use their own database server, in memory, so they never touch the data of the application.
 
 ## Try it
 
