@@ -20,19 +20,24 @@ Open http://localhost:8080. The first start generates the application and push k
 | Run one test class | `docker compose run --rm test vendor/bin/phpunit --filter BookingTest` |
 | Use another port | `APP_PORT=8090 docker compose up --build` |
 | Stop | `docker compose down` |
-| Stop and delete all data | `docker compose --profile test down --volumes` |
+| Stop and delete all data (also needed if you ran a version without accounts) | `docker compose --profile test down --volumes` |
 
 `vue-tsc` and the Node tests run while the image of `test` is built, so Docker skips them when nothing under `resources/` or the manifests changed. Pint and PHPUnit run in the container every time. The tests use their own database server, in memory, so they never touch the data of the application.
 
 ## Try it
 
-1. Continue as **Emma Clark** (buyer). Her availability is already there, so she sees homes with slots. Pick one and book it.
-2. Choose **Switch user** and continue as the seller of that home (Grace Miller, Daniel Ortiz or Priya Shah). The notification is there. Open the schedule of the home, see the showing and cancel it.
-3. Back as Emma, a notification says so, and that slot is no longer offered.
-4. Continue as **Olivia Reed** (buyer) to see what someone without availability sees.
-5. As any seller, open **Notifications**, turn on push and close the tab. Book as a buyer from another browser or profile: the notification arrives. Switching user ends it.
+Every demo account has the password `maple-street-48`. You can also create your own.
 
-Users are picked, not authenticated: see [Known limitations](#known-limitations).
+| Side | Emails |
+|---|---|
+| Sellers | `grace@example.com`, `daniel@example.com`, `priya@example.com` |
+| Buyers | `emma@example.com`, `noah@example.com`, `olivia@example.com` |
+
+1. Log in as **Emma Clark** (buyer). Her availability is already there, so she sees homes with slots. Pick one and book it.
+2. Choose **Log out** and log in as the seller of that home (Grace Miller, Daniel Ortiz or Priya Shah). The notification is there. Open the schedule of the home, see the showing and cancel it.
+3. Back as Emma, a notification says so, and that slot is no longer offered.
+4. Log in as **Olivia Reed** (buyer) to see what someone without availability sees.
+5. As any seller, open **Notifications**, turn on push and close the tab. Book as a buyer from another browser or profile: the notification arrives. Logging out ends it.
 
 ## How it works
 
@@ -45,6 +50,7 @@ app/Scheduling/       The rules. No HTTP in here.
 app/Listings/         Photos, and what can be edited while showings exist
 app/Http/             Thin controllers: find the resource of this user, call an action
 app/Notifications/    In-app notifications, and their push version
+app/Accounts/         What an email must look like, for registering and logging in
 app/Push/             Which browser is subscribed, and which push services are accepted
 resources/js/pages/   One Vue page per screen, under seller/ and buyer/
 database/             Migrations (with the constraints), factories, demo data
@@ -79,11 +85,13 @@ If some code ever forgets a lock, PostgreSQL exclusion constraints still reject 
 
 `TellOtherSide` runs inside the transaction of the action. It writes the in-app notification and, if the other side has a subscribed browser, a push job. The queue is a table of the same database, so the job exists only if the action is committed, and it is not lost if the process dies right after. The `worker` service sends it.
 
-A browser is subscribed for one user. Switching user removes the subscription on the server and in the browser. The server sends requests to the address of the subscription, so only the push services of the browsers are accepted, over HTTPS, without redirects.
+A browser is subscribed for one user. Logging out, or logging in as someone else, removes the subscription on the server and in the browser. The server sends requests to the address of the subscription, so only the push services of the browsers are accepted, over HTTPS, without redirects.
 
 ### Permissions
 
-Every query starts from the signed-in user, for example `$request->user()->listings()->findOrFail($id)`, so a resource of someone else is a 404. The area of the other role is a 403, and without a session every page redirects to the picker.
+Every query starts from the signed-in user, for example `$request->user()->listings()->findOrFail($id)`, so a resource of someone else is a 404. The area of the other role is a 403, and without a session every page of both areas redirects to the login.
+
+Passwords are stored with bcrypt. Five failures in a minute for one email and address stop that email from that address until the minute ends. An unknown email and a wrong password get the same answer. The session id changes when logging in.
 
 ## Assumptions and decisions
 
@@ -101,7 +109,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D8 | Nothing about how many showings per home | One active showing per buyer and home | No limit: one buyer could take every slot. A new one is allowed after the first ends | Are second showings allowed before the first? |
 | D9 | "relevant information". Another project in the same document sets a minimum, this one does not | What someone needs to decide on a visit, plus up to 5 photos by room | A full portal page: the core here is scheduling | What detail would stop someone from asking for a visit? |
 | D10 | "their house" | Several listings per seller, never deleted | One per seller: costs the same and blocks whoever sells two | Can a seller have more than one? |
-| D12 | Nothing about accounts | "Continue as" picker with a real session and server-side permissions | Passwords or full registration: time that shows nothing about the problem. Not deployable as it is | How do users sign in today? |
+| D12 | Nothing about accounts | Registration and login with email and password, one role per account, server-side permissions | A "Continue as" picker: it was the first version, and anyone could enter as anyone. Email verification and password recovery: they need a mail service. Both roles in one account: every page would need to say which side it is on | How do users sign in today? Can one person buy and sell? |
 | D13 | Nothing about how long a showing lasts | On the listing (15, 30, 45, 60 min), copied to each window | Per window: repeated by hand, though it depends on the home. Live value on the listing: changing it would move booked slots. Fixed 30 min: a studio and a large house take different times. No buffer between showings: whoever needs one picks a longer duration | Do you need time between showings? |
 | D14 | Nothing about time zones | Zone per listing, availability in house time, UTC instants on showings, viewer's time as a second line | One zone for the whole application: wrong times elsewhere. Zone per buyer: a buyer travelling to the house would have to change it. A showing is in person, so the clock that matters is the one at the door | Do you operate in several zones? |
 | D15 | Nothing about overlapping windows | Rejected | Merging: which duration wins? Allowing: overlapping slots on screen | |
@@ -146,14 +154,15 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 ## How it was built
 
 1. A written plan first, in [docs/plan.md](docs/plan.md): decisions, rules with examples, and numbered acceptance criteria.
-2. For matching, booking, notifications and push: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
+2. For matching, booking, notifications, push and accounts: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
 5. Screens and push were also driven in real browsers. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
 
 ## Known limitations
 
-- No passwords: anyone can continue as anyone. Two tabs share one session, so switching user in one changes the other.
+- Emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
+- The demo accounts share a password that is written above.
 - A buyer whose free time almost fits a slot does not see the home.
 - With homes in two zones, a range matches local time in both, which does not mean there is time to travel.
 - Adjacent showings in different homes leave no travel time.

@@ -17,7 +17,7 @@ The brief asks for a two sided application: sellers set up their house as a list
 | D9 | Relevant information | Address, city, state, price, bedrooms, bathrooms, short description, 0 to 5 photos with a room label |
 | D10 | Listings per seller | Several. Listings are not deleted: with no open windows they leave the results |
 | D11 | Stack | PHP 8.4, Laravel 13, Inertia 3, Vue 3.5, TypeScript 6.0.3, Vite 8, Tailwind 4, PostgreSQL 18, PHPUnit 12, Docker Compose |
-| D12 | Authentication | "Continue as" user picker over a real session. One role per user, authorization on the server |
+| D12 | Authentication | Registration and login with email and password over a real session. One role per user, chosen when registering, authorization on the server |
 | D13 | Duration | On the listing (15, 30, 45, 60 min, default 30), copied to each window when created |
 | D14 | Time zone | Per listing. Windows and availability are local to the house. Showings store UTC instants |
 | D15 | Overlapping windows | Rejected within a listing, adjacent ones accepted |
@@ -37,7 +37,7 @@ All intervals are half-open: `[start, end)`.
 
 | Table | Columns | Database guarantees |
 |---|---|---|
-| users | name, role (`seller`, `buyer`) | role check |
+| users | name, email, password (hash), role (`seller`, `buyer`) | role check, unique email in lower case |
 | listings | seller_id, address, city, state, price (whole dollars, from 1), bedrooms (from 0), bathrooms (from 0.5, steps of 0.5), description null, timezone, showing_duration_minutes, min_notice_hours | checks on timezone, duration and notice |
 | listing_photos | listing_id, path, room (exterior, living_room, kitchen, bedroom, bathroom, other), position | unique (listing_id, position) |
 | showing_windows | listing_id, local_starts_at, local_ends_at (without time zone), duration_minutes, closed_at null | end > start, same date, exclusion of overlaps per listing among open windows |
@@ -58,7 +58,7 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R7 Closing is refused with active showings. Showing 10:00-10:30: refused at 10:15, allowed at 10:30.
 - R8 Cancelling: only while confirmed and before the start, once. A slot cancelled by the seller stays closed in that window; a new window opens it again.
 - R9 UTC. Denver 10:00 is 17:00Z on 2027-03-13 and 16:00Z on 2027-03-15. Phoenix 10:00 is 17:00Z on both days.
-- R10 Permissions. Someone else's resource: 404. The other role's area: 403. No session: redirect to the picker.
+- R10 Permissions. Someone else's resource: 404. The other role's area: 403. No session: redirect to the login page.
 - R11 On a day with a daylight-saving change in the listing's zone, a window must start at 3:00 AM or later.
 - R12 A window must start in the future. An availability range is past once it is over in Pacific time; past ranges are rejected on create and hidden afterwards. Nothing ends at midnight.
 - R13 Address, city and state are locked while the listing has active showings. The zone is locked while it has an open window or any showing. Changing the duration does not touch existing windows.
@@ -95,9 +95,15 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 | 24 | The suite runs with one documented command, `docker compose run --rm test` |
 | 25 | (Push extra) Each side gets only its own notifications, with the tab closed. Switching user removes the subscription |
 | 26 | The `runtime` image has no Composer, Node, dev dependencies or tests, and runs as an unprivileged user. The README shows measured sizes per stage (`docker history`) and build times: cold, unchanged, and after a one-line change |
+| 27 | Registering creates the account, opens a session with a new id and goes to the area of the role |
+| 28 | Refused, with nothing written and never a server error: taken email (in any case, also if taken in the meantime), password under 8 characters, over 72 bytes or not confirmed, unknown role, malformed input |
+| 29 | Logging in goes to the area of the role. An unknown email and a wrong password give the same message |
+| 30 | After 5 failures in a minute for one email and address, even the right password is refused until that minute ends |
+| 31 | The password is stored hashed and never reaches the client or the session |
+| 32 | With a session, the login and registration pages redirect to the area. Logging in as someone else removes the push subscription of this browser, and failing to does not |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 
 ## Out of scope
 
-Real accounts, email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot.
+Email verification, password recovery, "remember me", email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot.
