@@ -163,7 +163,7 @@ class PhotoOrderTest extends TestCase
 
         $this->actingAs(User::factory()->buyer()->create())->put($uri, ['photos' => [1]])->assertForbidden();
         auth()->logout();
-        $this->put($uri, ['photos' => [1]])->assertRedirect('/');
+        $this->put($uri, ['photos' => [1]])->assertRedirect('/login');
     }
 
     private function photo(int $position, string $room = 'exterior'): ListingPhoto

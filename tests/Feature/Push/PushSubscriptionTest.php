@@ -154,7 +154,7 @@ class PushSubscriptionTest extends TestCase
     #[TestWith(['DELETE'])]
     public function test_a_session_is_required(string $method): void
     {
-        $this->call($method, '/push-subscription')->assertRedirect('/');
+        $this->call($method, '/push-subscription')->assertRedirect('/login');
     }
 
     #[TestWith(['seller'])]

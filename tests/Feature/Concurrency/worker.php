@@ -32,6 +32,12 @@ try {
 
             return fn () => app(BookShowing::class)->handle($buyer, $arguments[1], CarbonImmutable::parse($arguments[2]));
         })(),
+        'book-home' => (function () use ($arguments) {
+            $buyer = User::findOrFail($arguments[0]);
+            $listing = Listing::findOrFail($arguments[1]);
+
+            return fn () => app(BookShowing::class)->fromHome($buyer, $listing, $arguments[2], CarbonImmutable::parse($arguments[3]));
+        })(),
         'cancel' => (function () use ($arguments) {
             $showing = Showing::findOrFail($arguments[0]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Http;
 
+use App\Listings\UsStates;
 use App\Models\AvailabilityRange;
 use App\Models\Listing;
 use App\Models\ListingPhoto;
@@ -35,6 +36,31 @@ class Presenter
         return [...$this->listing($listing), 'cover' => $cover === null ? null : $this->photo($cover)];
     }
 
+    /** @return array<string, mixed> what anyone sees */
+    public function home(Listing $listing): array
+    {
+        return [
+            ...$listing->only('id', 'address', 'city', 'state', 'price', 'bedrooms', 'bathrooms', 'description', 'timezone'),
+            'state_name' => UsStates::NAMES[$listing->state],
+        ];
+    }
+
+    /** @return array{url: string, room: string} */
+    public function publicPhoto(ListingPhoto $photo): array
+    {
+        return ['url' => $this->photoUrl($photo), 'room' => $photo->room->value];
+    }
+
+    /** @return array{window_id: int, starts_at: string, ends_at: string} */
+    public function slot(Slot $slot): array
+    {
+        return [
+            'window_id' => $slot->window->id,
+            'starts_at' => $slot->startsAt->toIso8601ZuluString(),
+            'ends_at' => $slot->endsAt->toIso8601ZuluString(),
+        ];
+    }
+
     /** @return array{id: int, url: string, room: string} */
     public function photo(ListingPhoto $photo): array
     {
@@ -46,12 +72,8 @@ class Presenter
     {
         return [
             ...$match->listing->only('id', 'address', 'city', 'state', 'price', 'bedrooms', 'bathrooms', 'description', 'timezone'),
-            'photos' => $match->listing->photos->map(fn (ListingPhoto $photo) => ['url' => $this->photoUrl($photo), 'room' => $photo->room]),
-            'slots' => array_map(fn (Slot $slot) => [
-                'window_id' => $slot->window->id,
-                'starts_at' => $slot->startsAt->toIso8601ZuluString(),
-                'ends_at' => $slot->endsAt->toIso8601ZuluString(),
-            ], $match->slots),
+            'photos' => $match->listing->photos->map($this->publicPhoto(...)),
+            'slots' => array_map($this->slot(...), $match->slots),
         ];
     }
 

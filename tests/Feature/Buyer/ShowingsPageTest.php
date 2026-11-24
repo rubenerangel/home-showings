@@ -81,7 +81,7 @@ class ShowingsPageTest extends TestCase
 
     public function test_a_session_of_a_buyer_is_required(): void
     {
-        $this->get('/buyer/showings')->assertRedirect('/');
+        $this->get('/buyer/showings')->assertRedirect('/login');
         $this->actingAs(User::factory()->seller()->create())->get('/buyer/showings')->assertForbidden();
     }
 }

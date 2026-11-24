@@ -1,12 +1,20 @@
 <?php
 
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\SessionController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/', [HomeController::class, 'index'])->name('homes');
+Route::get('/homes/{listing}', [HomeController::class, 'show'])->where('listing', '[0-9]{1,18}')->name('homes.show');
+Route::post('/homes/{listing}/showings', [HomeController::class, 'book'])
+    ->where('listing', '[0-9]{1,18}')
+    ->middleware(['auth', 'role:buyer'])
+    ->name('homes.book');
+
 Route::middleware('guest')->group(function () {
-    Route::get('/', [SessionController::class, 'create'])->name('login');
+    Route::get('/login', [SessionController::class, 'create'])->name('login');
     Route::get('/register', [RegistrationController::class, 'create'])->name('register');
     Route::post('/register', [RegistrationController::class, 'store'])->name('register.store');
 });

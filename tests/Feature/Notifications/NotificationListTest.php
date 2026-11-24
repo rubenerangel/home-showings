@@ -79,7 +79,7 @@ class NotificationListTest extends TestCase
     #[TestWith(['POST', '/buyer/notifications/read'])]
     public function test_a_session_of_that_role_is_required(string $method, string $uri): void
     {
-        $this->call($method, $uri)->assertRedirect('/');
+        $this->call($method, $uri)->assertRedirect('/login');
 
         $other = str_starts_with($uri, '/seller') ? 'buyer' : 'seller';
         $this->actingAs(User::factory()->create(['role' => $other]))->call($method, $uri)->assertForbidden();

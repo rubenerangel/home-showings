@@ -4,6 +4,7 @@ namespace App\Scheduling;
 
 use App\Enums\ShowingEvent;
 use App\Enums\ShowingStatus;
+use App\Models\Listing;
 use App\Models\Showing;
 use App\Models\ShowingWindow;
 use App\Models\User;
@@ -20,12 +21,21 @@ class BookShowing
 {
     public function __construct(private readonly TellOtherSide $tellOtherSide) {}
 
+    /** From the search, which is by availability. */
     public function handle(User $buyer, int $windowId, CarbonImmutable $startsAt): Showing
     {
-        return DB::transaction(fn () => $this->book($buyer->id, $windowId, $startsAt), attempts: 3);
+        return DB::transaction(fn () => $this->book($buyer->id, $windowId, $startsAt, anyTime: false), attempts: 3);
     }
 
-    private function book(int $buyerId, int $windowId, CarbonImmutable $startsAt): Showing
+    /** From the page of a home, where picking a time already says that the buyer is free then (D7). */
+    public function fromHome(User $buyer, Listing $listing, int $windowId, CarbonImmutable $startsAt): Showing
+    {
+        $listing->windows()->findOrFail($windowId);
+
+        return DB::transaction(fn () => $this->book($buyer->id, $windowId, $startsAt, anyTime: true), attempts: 3);
+    }
+
+    private function book(int $buyerId, int $windowId, CarbonImmutable $startsAt, bool $anyTime): Showing
     {
         $buyer = User::query()->lockForUpdate()->findOrFail($buyerId);
         $window = ShowingWindow::query()->with('listing')->lockForUpdate()->findOrFail($windowId);
@@ -33,7 +43,7 @@ class BookShowing
         $now = CarbonImmutable::now();
 
         $slot = array_find($window->slots(), fn (Slot $slot) => $slot->startsAt->equalTo($startsAt));
-        $reason = $slot === null ? Refusal::NotAvailable : $this->refusal($buyer, $slot, $now);
+        $reason = $slot === null ? Refusal::NotAvailable : $this->refusal($buyer, $slot, $now, $anyTime);
         if ($reason !== null) {
             throw new Refused($reason);
         }
@@ -58,7 +68,7 @@ class BookShowing
         return $showing;
     }
 
-    private function refusal(User $buyer, Slot $slot, CarbonImmutable $now): ?Refusal
+    private function refusal(User $buyer, Slot $slot, CarbonImmutable $now, bool $anyTime): ?Refusal
     {
         $window = $slot->window;
         $blocking = $window->listing->showings()->get()->filter(fn (Showing $showing) => $showing->blocks($slot));
@@ -68,7 +78,7 @@ class BookShowing
             $window->closed_at !== null,
             $blocking->contains('status', ShowingStatus::CancelledBySeller) => Refusal::NotAvailable,
             ! $slot->hasNoticeAt($now) => Refusal::Notice,
-            ! $buyer->availability()->contains($slot->local) => Refusal::OutsideAvailability,
+            ! $anyTime && ! $buyer->availability()->contains($slot->local) => Refusal::OutsideAvailability,
             $own->contains('listing_id', $window->listing_id) => Refusal::AlreadyHasShowing,
             $blocking->isNotEmpty() => Refusal::JustBooked,
             $own->contains(fn (Showing $showing) => $slot->overlaps($showing)) => Refusal::Overlaps,

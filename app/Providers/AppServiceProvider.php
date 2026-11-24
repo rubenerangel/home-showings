@@ -14,10 +14,15 @@ use NotificationChannels\WebPush\Events\NotificationFailed;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /** R18, each limit on its own. */
+    private const REQUESTS_A_MINUTE = 60;
+
     public function boot(): void
     {
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()->id));
-        RateLimiter::for('api-guest', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(self::REQUESTS_A_MINUTE)->by($request->user()->id));
+        // Apart from the one of the accounts, so looking at homes never blocks a login.
+        RateLimiter::for('api-public', fn (Request $request) => Limit::perMinute(self::REQUESTS_A_MINUTE)->by($request->ip()));
+        RateLimiter::for('api-guest', fn (Request $request) => Limit::perMinute(self::REQUESTS_A_MINUTE)->by($request->ip()));
 
         // The id of a token is looked up in the database, so it has to fit in the column.
         Sanctum::getAccessTokenFromRequestUsing(

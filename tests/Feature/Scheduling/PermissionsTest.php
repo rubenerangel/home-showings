@@ -17,7 +17,7 @@ class PermissionsTest extends TestCase
     #[DataProvider('routes')]
     public function test_without_a_session_every_route_redirects_to_the_login(string $method, string $uri): void
     {
-        $this->call($method, $this->fill($uri))->assertRedirect('/');
+        $this->call($method, $this->fill($uri))->assertRedirect('/login');
     }
 
     #[DataProvider('routes')]

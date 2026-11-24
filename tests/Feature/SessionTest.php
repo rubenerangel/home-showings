@@ -22,7 +22,7 @@ class SessionTest extends TestCase
 
     public function test_the_page_is_open_to_guests(): void
     {
-        $this->get('/')->assertOk()->assertInertia(fn (Assert $page) => $page->component('Login'));
+        $this->get('/login')->assertOk()->assertInertia(fn (Assert $page) => $page->component('Login'));
     }
 
     // Criterion 29
@@ -51,7 +51,7 @@ class SessionTest extends TestCase
     {
         $this->user();
         $id = Str::random(40);
-        $this->withCookie(config('session.cookie'), $id)->get('/');
+        $this->withCookie(config('session.cookie'), $id)->get('/login');
         $this->assertSame($id, session()->getId());
 
         $this->logIn()->assertRedirect('/buyer');
@@ -67,7 +67,7 @@ class SessionTest extends TestCase
     {
         $this->user();
 
-        $this->from('/')->logIn($input)->assertRedirect('/')->assertSessionHasErrors(['email' => self::WRONG]);
+        $this->from('/login')->logIn($input)->assertRedirect('/login')->assertSessionHasErrors(['email' => self::WRONG]);
 
         $this->assertGuest();
     }
@@ -83,7 +83,7 @@ class SessionTest extends TestCase
     {
         $this->user();
 
-        $this->from('/')->logIn($input)->assertRedirect('/')->assertSessionHasErrors($field);
+        $this->from('/login')->logIn($input)->assertRedirect('/login')->assertSessionHasErrors($field);
 
         $this->assertGuest();
     }
@@ -154,7 +154,7 @@ class SessionTest extends TestCase
     #[DataProvider('roles')]
     public function test_with_a_session_the_page_redirects_to_the_area(string $role): void
     {
-        $this->actingAs(User::factory()->create(['role' => $role]))->get('/')->assertRedirect("/$role");
+        $this->actingAs(User::factory()->create(['role' => $role]))->get('/login')->assertRedirect("/$role");
     }
 
     public function test_failing_to_log_in_as_someone_else_keeps_the_session(): void
@@ -173,7 +173,7 @@ class SessionTest extends TestCase
     #[DataProvider('roles')]
     public function test_without_a_session_both_areas_redirect_to_the_login(string $role): void
     {
-        $this->get("/$role")->assertRedirect('/');
+        $this->get("/$role")->assertRedirect('/login');
     }
 
     public function test_the_area_of_the_other_role_is_forbidden(): void

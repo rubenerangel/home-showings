@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Accounts\CheckCredentials;
 use App\Http\AccountInput;
+use App\Http\AfterSignIn;
 use App\Push\BrowserSubscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,11 +14,11 @@ use Inertia\Response;
 
 class SessionController extends Controller
 {
-    public function __construct(private readonly BrowserSubscription $browserSubscription) {}
+    public function __construct(private readonly BrowserSubscription $browserSubscription, private readonly AfterSignIn $afterSignIn) {}
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('Login');
+        return Inertia::render('Login', ['home' => $this->afterSignIn->wanted($request->query('home'))]);
     }
 
     public function store(Request $request, CheckCredentials $checkCredentials): RedirectResponse
@@ -30,7 +31,7 @@ class SessionController extends Controller
         $this->browserSubscription->forget($previous, $request->session());
         $request->session()->regenerate();
 
-        return redirect()->route($user->role->home());
+        return $this->afterSignIn->go($user, $request->input('home'));
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -40,6 +41,6 @@ class SessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('homes');
     }
 }

@@ -28,3 +28,10 @@ const rooms: Record<string, string> = {
 };
 
 export const formatRoom = (room: string) => rooms[room] ?? room;
+
+// A date of the house has no zone, so UTC only serves to format it.
+const houseDate = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+
+export const formatDate = (date: string) => houseDate.format(new Date(`${date}T00:00:00Z`));
+
+export const formatCount = (count: number, one: string, many: string) => `${count.toLocaleString('en-US')} ${count === 1 ? one : many}`;

@@ -249,9 +249,9 @@ class PhotoTest extends TestCase
         $this->delete("$path/{$photo->id}")->assertForbidden();
 
         $this->app['auth']->forgetGuards();
-        $this->upload([$this->photo()])->assertRedirect('/');
-        $this->patch("$path/{$photo->id}", ['room' => 'other'])->assertRedirect('/');
-        $this->delete("$path/{$photo->id}")->assertRedirect('/');
+        $this->upload([$this->photo()])->assertRedirect('/login');
+        $this->patch("$path/{$photo->id}", ['room' => 'other'])->assertRedirect('/login');
+        $this->delete("$path/{$photo->id}")->assertRedirect('/login');
 
         $this->assertSame(Room::Exterior, $this->listing->photos()->sole()->room);
     }

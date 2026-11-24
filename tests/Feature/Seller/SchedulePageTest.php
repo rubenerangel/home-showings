@@ -175,7 +175,7 @@ class SchedulePageTest extends TestCase
     {
         $path = "/seller/listings/{$this->listing->id}/schedule";
 
-        $this->get($path)->assertRedirect('/');
+        $this->get($path)->assertRedirect('/login');
         $this->actingAs($this->buyer)->get($path)->assertForbidden();
         $this->get('/seller/listings/999999/schedule')->assertForbidden();
 

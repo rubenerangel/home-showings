@@ -3,6 +3,7 @@
 use App\Accounts\LockedOut;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RedirectSignedIn;
 use App\Scheduling\Refused;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,9 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [HandleInertiaRequests::class]);
-        $middleware->alias(['role' => EnsureRole::class]);
-        $middleware->redirectGuestsTo(fn () => route('login'));
-        $middleware->redirectUsersTo(fn (Request $request) => route($request->user()->role->home()));
+        $middleware->alias(['role' => EnsureRole::class, 'guest' => RedirectSignedIn::class]);
+        // A guest who tried to book comes back to that home.
+        $middleware->redirectGuestsTo(fn (Request $request) => route('login', $request->routeIs('homes.book') ? ['home' => $request->route('listing')] : []));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $isApi = fn (Request $request) => $request->is('api', 'api/*');

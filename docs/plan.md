@@ -12,7 +12,7 @@ The brief asks for a two sided application: sellers set up their house as a list
 | D4 | Allowed dates and times | Windows on specific dates (date, start, end), not weekly rules |
 | D5 | Changing windows | Windows are created and closed, never edited. Closing is refused while a showing is active |
 | D6 | Availability | Saved per buyer, several ranges on specific dates |
-| D7 | What a buyer can book | Only slots fully inside their availability |
+| D7 | What a buyer can book | From the search, only slots fully inside their availability. From the page of a home, any open slot: picking a time already says that they are free then |
 | D8 | Showings per home | One active showing per buyer and listing |
 | D9 | Relevant information | Address, city, state, price, bedrooms, bathrooms, short description, 0 to 5 photos with a room label |
 | D10 | Listings per seller | Several. Listings are not deleted: with no open windows they leave the results |
@@ -29,6 +29,8 @@ The brief asks for a two sided application: sellers set up their house as a list
 | D21 | Double booking | Row locks (buyer, then window) plus PostgreSQL exclusion constraints |
 | D22 | Image | Multi-stage on `alpine:3.22` with `php84` packages. Stages `vendor`, `assets`, `runtime` (the shipped one, unprivileged user) and `test` (`runtime` plus dev dependencies). Manifests before source, BuildKit cache mounts for Composer and npm |
 | D23 | API | `/api/v1`, JSON. Personal access tokens (Laravel Sanctum) that expire 30 days after they are created, whatever their use. Same classes and rules as the web. Subscribing to push is only in the web, because it belongs to a browser. What is done by API does send push to the browsers already subscribed |
+| D24 | Main page | `/` is public: every available home, by state and city. `/homes/{id}` is one of them. The login is in `/login` |
+| D25 | What a guest sees | Photos, address, price, facts, description, zone, and the days with openings. The times only with a buyer account |
 
 Time zones: America/New_York, America/Chicago, America/Denver, America/Phoenix, America/Los_Angeles.
 
@@ -60,7 +62,7 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R7 Closing is refused with active showings. Showing 10:00-10:30: refused at 10:15, allowed at 10:30.
 - R8 Cancelling: only while confirmed and before the start, once. A slot cancelled by the seller stays closed in that window; a new window opens it again.
 - R9 UTC. Denver 10:00 is 17:00Z on 2027-03-13 and 16:00Z on 2027-03-15. Phoenix 10:00 is 17:00Z on both days.
-- R10 Permissions. Someone else's resource: 404. The other role's area: 403. No session: redirect to the login page.
+- R10 Permissions. Someone else's resource: 404. The other role's area: 403. No session: redirect to the login page. The homes are public.
 - R11 On a day with a daylight-saving change in the listing's zone, a window must start at 3:00 AM or later.
 - R12 A window must start in the future. An availability range is past once it is over in Pacific time; past ranges are rejected on create and hidden afterwards. Nothing ends at midnight.
 - R13 Address, city and state are locked while the listing has active showings. The zone is locked while it has an open window or any showing. Changing the duration does not touch existing windows.
@@ -71,6 +73,11 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R18 Limits. Login failures share the counter of the web: over it, 429 with Retry-After. 60 requests a minute for each account, and on guest routes for each address: 429. A bad token, an unknown path and a wrong method are not counted. A missing resource is.
 - R19 Text with a null byte, or that is not UTF-8, is refused in web and API.
 - R20 The seller can put the photos of a home in any order. The list sent has to be exactly the current photos, or nothing changes. Positions end from 1 to n. It takes turns with uploads, and with the removal of those photos.
+- R21 A home is available when some buyer could book a slot of it now: window not closed, notice met, not started, no confirmed showing over it, not cancelled by the seller in that window. The availability and the showings of one buyer do not count.
+- R22 Homes go by state name, city (whatever its case), price and id. The filter is one state, and a value that is not a state shows everything. The counts are of all the available homes.
+- R23 A guest who wants to book goes to register, or to log in, and comes back to that home. A seller goes to their area. A home that does not exist or is no longer available is ignored. The home travels in the form, and is checked when it is sent.
+- R24 A buyer sees every open slot of a home, and which ones fit. With an active showing there, the showing and no slots.
+- R25 A home that never had a window is a 404. One with no openings says so.
 
 ## API
 
@@ -80,11 +87,13 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 |---|---|---|
 | Guest | POST /register (as the web, plus device_name) | 201, user, token, expires_at |
 | Guest | POST /tokens (email, password, device_name) | 201, user, token, expires_at |
+| Anyone | GET /homes (?state=), GET /homes/{id} | 200 |
 | Both | DELETE /tokens/current, DELETE /tokens (all of the account) | 204 |
 | Both | GET /me | 200 |
 | Both | GET /notifications (latest 50, with `unread` beside `data`), POST /notifications/read | 200, 204 |
 | Buyer | GET, POST /buyer/availability, DELETE /buyer/availability/{id} | 200, 201, 204 |
 | Buyer | GET /buyer/listings (matches with slots, with `has_availability` beside `data`) | 200 |
+| Buyer | GET /buyer/homes/{id} (home, slots with `fits`, own showing), POST /buyer/homes/{id}/showings | 200, 201 |
 | Buyer | GET, POST /buyer/showings, POST /buyer/showings/{id}/cancel | 200, 201, 200 |
 | Seller | GET, POST /seller/listings, GET, PUT /seller/listings/{id} (with photos and locks) | 200, 201, 200, 200 |
 | Seller | POST /seller/listings/{id}/photos (multipart, answers all the photos), PATCH (room), DELETE /seller/listings/{id}/photos/{id} | 201, 200, 204 |
@@ -129,8 +138,8 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 29 | Logging in goes to the area of the role. An unknown email and a wrong password give the same message |
 | 30 | After 5 failures in a minute for one email and address, even the right password is refused until that minute ends |
 | 31 | The password is stored hashed and never reaches the client or the session |
-| 32 | With a session, the login and registration pages redirect to the area. Logging in as someone else removes the push subscription of this browser, and failing to does not |
-| 33 | Without a valid token every route but the two guest ones is a 401 in JSON, also without an Accept header, also with a web session |
+| 32 | With a session, the login and registration pages redirect to the area, or to the wanted home (R23). Logging in as someone else removes the push subscription of this browser, and failing to does not |
+| 33 | Without a valid token every route but the guest and the public ones is a 401 in JSON, also without an Accept header, also with a web session |
 | 34 | Registering: the account of 27, the refusals of 28 as 422, a working token, no session. Account and token are written together or not at all |
 | 35 | /tokens: same answer for an unknown email and a wrong password. Five failures split between web and API block both. A missing device_name is a 422 that is not counted |
 | 36 | A token is stored hashed, works one second before 30 days and not at 30 days, and revoking one, or all, ends exactly those |
@@ -139,17 +148,28 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 39 | Every case of `Refusal` is a 409 with its code and message, and writes nothing |
 | 40 | Seller: every operation has the effect of the web one, with R13 and R14 as 422 |
 | 41 | Notifications: the own ones only, unread count, mark all as read. Booking and cancelling by API notify as in 18, and queue push for a subscribed browser |
-| 42 | A slot booked through one door is refused through the other. The web tests do not change |
+| 42 | A slot booked through one door is refused through the other |
 | 43 | Request 60 is accepted and 61 is a 429, two tokens of one account share the limit, and it ends after a minute |
 | 44 | The README documents every route (compared once with `route:list`) and has a curl example that was run against the demo data |
-| 45 | The design rules of CLAUDE.md that can be read from the code: an injected service is not `final`, nothing is looked up with `app()`, `resolve()` or `new`, a static method does not touch the database, a controller does not write, and only looks up by id what belongs to its user (R10) |
+| 45 | The design rules of CLAUDE.md that can be read from the code: an injected service is not `final`, nothing is looked up with `app()`, `resolve()` or `new`, a static method does not touch the database, a controller does not write, and only looks up by id what belongs to its user (R10). Public homes are looked up by the catalog |
 | 46 | Photos: any order is kept as sent, numbered from 1, also from positions with gaps. Homes, editing, carousel and API show it, with the first as the cover. A new photo goes last |
 | 47 | Photos: someone else's home, missing and malformed ids: 404, nothing changes. Buyer 403. Without session or token: login or 401. Other methods: 405 |
 | 48 | Photos: a list that is not exactly the photos of the home is a 422 and nothing changes. While another request holds the home, it waits. A photo removed before its turn is a 422 |
 | 49 | Photos in the page: dragging, buttons to make cover and to move earlier or later, keyboard, one request at a time, focus, no overflow at 320 px |
+| 50 | `/` shows exactly the available homes (R21), in the order of R22, to guests, buyers and sellers. A buyer sees which ones fit |
+| 51 | The state filter and its counts, a state without homes, a value that is not a state |
+| 52 | A guest and a seller see days and counts, and no times, in the page, its data and the API. The day is the one of the house |
+| 53 | R23, registering and logging in, as buyer and as seller, with a home that is missing, malformed or full, after a wrong password, with two tabs. Never to another site |
+| 54 | R24: the slots, the mark, the active showing, the own showings elsewhere |
+| 55 | From the page of a home a slot outside the availability is booked, and no availability is added. The other refusals of R6 are the same and write nothing. The search still asks for the availability. A window of another home is a 404 |
+| 56 | Ten buyers at once, one buyer twice, and the two doors at once: one showing |
+| 57 | Booking without a session goes to the login with the home, a seller gets 403. Protected pages go to `/login` |
+| 58 | API: 50 to 52, 54, 55 and 57, with the codes of R17, and a limit of 60 a minute of its own for the public routes |
+| 59 | My homes by state and city, when there is more than one |
+| 60 | Screens: 320 px, keyboard, empty states, with and without photos |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 
 ## Out of scope
 
-Email verification, password recovery, "remember me", email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot. In the API: push subscriptions, pagination, abilities per token, listing tokens, other versions, OpenAPI, a list of allowed origins (CORS).
+Email verification, password recovery, "remember me", email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot, map, text search, pagination, favorites. In the API: push subscriptions, pagination, abilities per token, listing tokens, other versions, OpenAPI, a list of allowed origins (CORS).

@@ -6,19 +6,23 @@ import { clearEdited } from '../clearEdited';
 import AccountPage from '../components/AccountPage.vue';
 import FieldError from '../components/FieldError.vue';
 import FormField from '../components/FormField.vue';
-import type { SessionUser } from '../types';
+import type { SessionUser, WantedHome } from '../types';
+
+const props = defineProps<{ home: WantedHome | null }>();
 
 const roles: { value: SessionUser['role']; label: string; hint: string }[] = [
     { value: 'buyer', label: 'Buyer', hint: 'I want to visit homes' },
     { value: 'seller', label: 'Seller', hint: 'I want to show my home' },
 ];
 
-const form = useForm<{ name: string; email: string; password: string; password_confirmation: string; role: SessionUser['role'] | '' }>({
+const form = useForm<{ name: string; email: string; password: string; password_confirmation: string; role: SessionUser['role'] | ''; home?: number }>({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    role: '',
+    // Who comes from a home wants to visit it.
+    role: props.home ? 'buyer' : '',
+    home: props.home?.id,
 });
 const clearError = clearEdited(form);
 const { busy, submit } = useAccountSubmit(
@@ -28,7 +32,7 @@ const { busy, submit } = useAccountSubmit(
 </script>
 
 <template>
-    <AccountPage title="Create an account" lead="One account is either for buying or for selling.">
+    <AccountPage title="Create an account" :lead="home ? `To book a showing at ${home.address}.` : 'One account is either for buying or for selling.'">
         <form class="space-y-4" novalidate @input="clearError" @submit.prevent="submit">
             <fieldset :aria-describedby="form.errors.role ? 'role-error' : undefined">
                 <legend class="mb-1.5 text-[0.9375rem] font-bold">I am a</legend>
@@ -68,6 +72,6 @@ const { busy, submit } = useAccountSubmit(
             </FormField>
             <button type="submit" class="btn btn-primary w-full sm:w-auto" :disabled="busy">{{ busy ? 'Creating…' : 'Create account' }}</button>
         </form>
-        <template #other>Already have one? <Link href="/" class="link">Log in</Link></template>
+        <template #other>Already have one? <Link :href="home ? `/login?home=${home.id}` : '/login'" class="link">Log in</Link></template>
     </AccountPage>
 </template>

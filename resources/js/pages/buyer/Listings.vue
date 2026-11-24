@@ -12,9 +12,9 @@ defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
 </script>
 
 <template>
-    <Head title="Homes" />
+    <Head title="Homes that fit" />
     <main class="page">
-        <h1 class="title">Homes you can visit</h1>
+        <h1 class="title">Homes that fit</h1>
         <p class="lead">Only homes with an opening that fits your availability. Times are local to each home.</p>
 
         <div v-if="!hasAvailability" class="panel mt-8 px-6 py-12 text-center">
@@ -31,7 +31,7 @@ defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
             <li v-for="listing in listings" :key="listing.id" class="panel grid overflow-clip md:grid-cols-[5fr_6fr]">
                 <div class="relative">
                     <h2 class="pointer-events-none absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] sm:top-5 sm:left-5">
-                        <StreetSign>{{ listing.address }}</StreetSign>
+                        <Link :href="`/homes/${listing.id}`" class="pointer-events-auto rounded-[7px]"><StreetSign>{{ listing.address }}</StreetSign></Link>
                     </h2>
                     <PhotoCarousel :photos="listing.photos" :label="listing.address" class="md:aspect-auto md:h-full md:min-h-104" />
                 </div>
@@ -42,7 +42,7 @@ defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
                     </div>
                     <FactList :facts="formatFacts(listing)" class="mt-1" />
                     <p v-if="listing.description" class="mt-3 max-w-[52ch] break-words">{{ listing.description }}</p>
-                    <SlotPicker :listing="listing" class="mt-5 border-t border-curb pt-5" />
+                    <SlotPicker :slots="listing.slots" :timezone="listing.timezone" class="mt-5 border-t border-curb pt-5" />
                 </div>
             </li>
         </ul>

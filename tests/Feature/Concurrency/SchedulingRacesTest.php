@@ -27,6 +27,48 @@ class SchedulingRacesTest extends ConcurrencyTestCase
         $this->assertSame(1, $this->confirmed());
     }
 
+    // Criterion 56
+
+    public function test_ten_buyers_from_the_page_of_the_home_produce_one_showing_and_nine_refusals(): void
+    {
+        $window = $this->window('10:00', '12:00');
+
+        $results = $this->race(...array_map(fn () => $this->bookHome(User::factory()->buyer()->create(), $window, '10:00'), range(1, 10)));
+
+        $this->assertEquals(['ok' => 1, 'refused: just_booked' => 9], array_count_values($results));
+        $this->assertSame(1, $this->confirmed());
+        $this->assertSame(0, AvailabilityRange::count());
+    }
+
+    #[DataProvider('rounds')]
+    public function test_one_buyer_twice_from_the_page_of_the_home_books_once(int $round): void
+    {
+        $buyer = User::factory()->buyer()->create();
+        $window = $this->window('10:00', '12:00');
+
+        $results = $this->race($this->bookHome($buyer, $window, '10:00'), $this->bookHome($buyer, $window, '10:00'));
+
+        $this->assertEquals(['ok' => 1, 'refused: already_has_showing' => 1], array_count_values($results));
+        $this->assertSame(1, $this->confirmed());
+    }
+
+    #[DataProvider('rounds')]
+    public function test_the_two_doors_at_once_book_once(int $round): void
+    {
+        $window = $this->window('10:00', '12:00');
+
+        $results = $this->race($this->bookHome(User::factory()->buyer()->create(), $window, '10:00'), $this->book($this->buyer(), $window, '10:00'));
+
+        $this->assertEquals(['ok' => 1, 'refused: just_booked' => 1], array_count_values($results));
+        $this->assertSame(1, $this->confirmed());
+    }
+
+    /** @return array{string, int, int, int, string} */
+    private function bookHome(User $buyer, ShowingWindow $window, string $time): array
+    {
+        return ['book-home', $buyer->id, $window->listing_id, $window->id, $this->instant($time)];
+    }
+
     // Criterion 11
 
     #[DataProvider('rounds')]

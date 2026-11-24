@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Scheduling\Availability;
+use Carbon\CarbonImmutable;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -69,6 +70,12 @@ class User extends Authenticatable
     public function showings(): HasMany
     {
         return $this->hasMany(Showing::class, 'buyer_id');
+    }
+
+    /** There is at most one (D8). */
+    public function activeShowingAt(Listing $listing, CarbonImmutable $now): ?Showing
+    {
+        return $this->showings()->active($now)->with('listing')->firstWhere('listing_id', $listing->id);
     }
 
     /** @return Collection<int, Showing> */

@@ -339,6 +339,53 @@
         scale: 0.94;
     }
 
+    .filter {
+        @apply inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border-[1.5px] border-[#758c93] bg-white px-4 text-[0.9375rem] font-semibold;
+        transition: transform 140ms var(--ease-out), background-color 120ms ease, border-color 120ms ease;
+
+        &[aria-current] {
+            @apply border-sign bg-sign text-white;
+        }
+
+        &:active {
+            transform: scale(0.97);
+        }
+    }
+
+    .home-tile {
+        @apply relative flex flex-col rounded-[10px] border border-curb bg-white;
+        transition: transform 140ms var(--ease-out), border-color 120ms ease;
+
+        &:has(.home-tile-link:active) {
+            transform: scale(0.99);
+        }
+
+        /* The ring goes around the tile, because the whole of it is the link. */
+        &:has(.home-tile-link:focus-visible) {
+            outline: 3px solid var(--color-sign);
+            outline-offset: 2px;
+        }
+    }
+
+    .home-tile-link {
+        outline: none;
+
+        &::after {
+            @apply absolute inset-0 rounded-[10px];
+            content: '';
+        }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .filter:hover:not([aria-current]) {
+            @apply border-asphalt bg-mist;
+        }
+
+        .home-tile:hover {
+            @apply border-sign;
+        }
+    }
+
     /* How high it is says whether it was read. */
     .notice {
         @apply relative flex gap-4 rounded-[10px] border border-curb bg-white px-5 py-4 sm:px-6;

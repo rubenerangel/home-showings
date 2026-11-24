@@ -4,6 +4,7 @@ namespace App\Http;
 
 use App\Enums\HouseTimezone;
 use App\Listings\ListingOptions;
+use App\Listings\UsStates;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ final class ListingInput
         return $request->validate([
             'address' => ['bail', 'required', 'string', 'max:255', self::TEXT],
             'city' => ['bail', 'required', 'string', 'max:255', self::TEXT],
-            'state' => ['bail', 'required', 'string', Rule::in(ListingOptions::STATES)],
+            'state' => ['bail', 'required', 'string', Rule::in(array_keys(UsStates::NAMES))],
             'price' => ['bail', 'required', 'integer', 'min:1', 'max:2147483647'],
             'bedrooms' => ['bail', 'required', 'integer', 'min:0', 'max:99'],
             'bathrooms' => ['bail', 'required', 'decimal:0,1', 'min:0.5', 'max:99.5', 'multiple_of:0.5'],

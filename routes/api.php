@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\Buyer;
+use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Seller;
 use App\Http\Controllers\Api\TokenController;
@@ -10,6 +11,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:api-guest')->group(function () {
     Route::post('/register', [AccountController::class, 'store']);
     Route::post('/tokens', [TokenController::class, 'store']);
+});
+
+Route::middleware('throttle:api-public')->group(function () {
+    Route::get('/homes', [HomeController::class, 'index']);
+    Route::get('/homes/{listing}', [HomeController::class, 'show'])->where('listing', '[0-9]{1,18}');
 });
 
 // Ids have up to 18 digits, so every accepted one fits in the column.
@@ -29,6 +35,8 @@ Route::middleware(['auth:sanctum', 'throttle:api'])
             Route::post('/availability', [Buyer\AvailabilityController::class, 'store']);
             Route::delete('/availability/{range}', [Buyer\AvailabilityController::class, 'destroy']);
             Route::get('/listings', [Buyer\ListingController::class, 'index']);
+            Route::get('/homes/{listing}', [HomeController::class, 'showForBuyer']);
+            Route::post('/homes/{listing}/showings', [HomeController::class, 'book']);
             Route::get('/showings', [Buyer\ShowingController::class, 'index']);
             Route::post('/showings', [Buyer\ShowingController::class, 'store']);
             Route::post('/showings/{showing}/cancel', [Buyer\ShowingController::class, 'cancel']);

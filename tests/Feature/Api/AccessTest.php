@@ -18,7 +18,10 @@ class AccessTest extends TestCase
 
     private const BOTH = ['GET /me', 'DELETE /tokens/current', 'DELETE /tokens', 'GET /notifications', 'POST /notifications/read'];
 
+    private const PUBLIC = ['GET /homes', 'GET /homes/{listing}'];
+
     private const BUYER = [
+        'GET /buyer/homes/{listing}', 'POST /buyer/homes/{listing}/showings',
         'GET /buyer/availability', 'POST /buyer/availability', 'DELETE /buyer/availability/{range}',
         'GET /buyer/listings', 'GET /buyer/showings', 'POST /buyer/showings', 'POST /buyer/showings/{showing}/cancel',
     ];
@@ -38,7 +41,7 @@ class AccessTest extends TestCase
             ->map(fn ($route) => collect($route->methods())->reject('HEAD')->implode('|').' '.substr($route->uri(), strlen('api/v1')))
             ->values()->all();
 
-        $this->assertEqualsCanonicalizing(['POST /register', 'POST /tokens', ...self::BOTH, ...self::BUYER, ...self::SELLER], $routes);
+        $this->assertEqualsCanonicalizing(['POST /register', 'POST /tokens', ...self::PUBLIC, ...self::BOTH, ...self::BUYER, ...self::SELLER], $routes);
     }
 
     // Criterion 33
@@ -80,7 +83,7 @@ class AccessTest extends TestCase
     {
         $token = $this->token(User::factory()->buyer()->create());
 
-        $this->get('/buyer', ['Authorization' => "Bearer $token"])->assertRedirect('/');
+        $this->get('/buyer', ['Authorization' => "Bearer $token"])->assertRedirect('/login');
     }
 
     // Criterion 36
