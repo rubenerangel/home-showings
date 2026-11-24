@@ -4,6 +4,6 @@ use App\Http\Controllers\Seller\ShowingController;
 use App\Http\Controllers\Seller\WindowController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/listings/{listing}/windows', [WindowController::class, 'store'])->whereNumber('listing')->name('windows.store');
-Route::post('/windows/{window}/close', [WindowController::class, 'close'])->whereNumber('window')->name('windows.close');
-Route::post('/showings/{showing}/cancel', [ShowingController::class, 'cancel'])->whereNumber('showing')->name('showings.cancel');
+Route::post('/listings/{listing}/windows', [WindowController::class, 'store'])->where('listing', '[0-9]{1,18}')->name('windows.store');
+Route::post('/windows/{window}/close', [WindowController::class, 'close'])->where('window', '[0-9]{1,18}')->name('windows.close');
+Route::post('/showings/{showing}/cancel', [ShowingController::class, 'cancel'])->where('showing', '[0-9]{1,18}')->name('showings.cancel');

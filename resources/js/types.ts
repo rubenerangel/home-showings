@@ -4,19 +4,7 @@ export interface SessionUser {
     role: 'seller' | 'buyer';
 }
 
-export interface Photo {
-    url: string;
-    room: 'exterior' | 'living_room' | 'kitchen' | 'bedroom' | 'bathroom' | 'other';
-}
-
-export interface Slot {
-    window_id: number;
-    starts_at: string;
-    ends_at: string;
-}
-
-export interface ListingMatch {
-    id: number;
+export interface ListingFields {
     address: string;
     city: string;
     state: string;
@@ -25,6 +13,44 @@ export interface ListingMatch {
     bathrooms: number;
     description: string | null;
     timezone: string;
+    showing_duration_minutes: number;
+    min_notice_hours: number;
+}
+
+export interface Listing extends ListingFields {
+    id: number;
+}
+
+export interface Photo {
+    url: string;
+    room: string;
+}
+
+export interface ListingPhoto extends Photo {
+    id: number;
+}
+
+export interface ListingOptions {
+    states: string[];
+    timezones: string[];
+    durations: number[];
+    notices: number[];
+    rooms: string[];
+}
+
+export interface ListingLocks {
+    location: boolean;
+    timezone: boolean;
+}
+
+export interface Slot {
+    window_id: number;
+    starts_at: string;
+    ends_at: string;
+}
+
+export interface ListingMatch extends Omit<ListingFields, 'showing_duration_minutes' | 'min_notice_hours'> {
+    id: number;
     photos: Photo[];
     slots: Slot[];
 }
