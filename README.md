@@ -12,7 +12,7 @@ You need Docker with Compose. Nothing else: PHP, Composer and Node run in contai
 docker compose up --build
 ```
 
-Open http://localhost:8080. The first start generates the application key, creates the tables and loads demo data with openings for at least the next 14 days. Later starts keep everything.
+Open http://localhost:8080. The first start generates the application and push keys, creates the tables and loads demo data with openings for at least the next 14 days. Later starts keep everything.
 
 | Task | Command |
 |---|---|
@@ -30,6 +30,7 @@ The tests use their own database server, in memory, so they never touch the data
 2. Choose **Switch user** and continue as the seller of that home (Grace Miller, Daniel Ortiz or Priya Shah). The notification is there. Open the schedule of the home, see the showing and cancel it.
 3. Back as Emma, a notification says so, and that slot is no longer offered.
 4. Continue as **Olivia Reed** (buyer) to see what someone without availability sees.
+5. As any seller, open **Notifications**, turn on push and close the tab. Book as a buyer from another browser or profile: the notification arrives. Switching user ends it.
 
 Users are picked, not authenticated: see [Known limitations](#known-limitations).
 
@@ -43,7 +44,8 @@ app/Scheduling/       The rules. No HTTP in here.
   Refusal, Refused                                      why an action is refused, and its exception
 app/Listings/         Photos, and what can be edited while showings exist
 app/Http/             Thin controllers: find the resource of this user, call an action
-app/Notifications/    In-app notifications
+app/Notifications/    In-app notifications, and their push version
+app/Push/             Which browser is subscribed, and which push services are accepted
 resources/js/pages/   One Vue page per screen, under seller/ and buyer/
 database/             Migrations (with the constraints), factories, demo data
 tests/                Unit, Feature, and Feature/Concurrency with real processes
@@ -73,6 +75,12 @@ Windows and availability are stored as **local times without a zone**: they mean
 
 If some code ever forgets a lock, PostgreSQL exclusion constraints still reject two confirmed showings that overlap, by listing and by buyer. That error (`23P01`) becomes a normal refusal and not a server error. `tests/Feature/Concurrency` runs real processes released together: ten buyers on one slot, one buyer on two homes, booking against closing in both orders, both sides cancelling at once.
 
+### Notifications
+
+`TellOtherSide` runs inside the transaction of the action. It writes the in-app notification and, if the other side has a subscribed browser, a push job. The queue is a table of the same database, so the job exists only if the action is committed, and it is not lost if the process dies right after. The `worker` service sends it.
+
+A browser is subscribed for one user. Switching user removes the subscription on the server and in the browser. The server sends requests to the address of the subscription, so only the push services of the browsers are accepted, over HTTPS, without redirects.
+
 ### Permissions
 
 Every query starts from the signed-in user, for example `$request->user()->listings()->findOrFail($id)`, so a resource of someone else is a 404. The area of the other role is a 403, and without a session every page redirects to the picker.
@@ -99,6 +107,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D15 | Nothing about overlapping windows | Rejected | Merging: which duration wins? Allowing: overlapping slots on screen | |
 | D16 | Nothing about cancelling | Both sides, before the start. Buyer frees the slot, seller closes it | No cancelling: the seller could never close a booked window. Always freeing the slot: someone else would take the time the seller just gave up | Is there a deadline to cancel? |
 | D17 | Nothing about notifications | In-app, in the same transaction | None: a buyer could reach a closed house. Email, SMS: need credentials or a local mail catcher | Which channel do your users expect? |
+| D18 | Nothing about push | Web push per side, as the creative extra, built once the rest was finished and tested | Only in-app: nobody hears anything with the tab closed | |
 | D19 | Nothing about notice | Per listing: 0, 2, 12, 24, 48 h, default 2 | None: a 9:58 booking for 10:00. One global value: an empty house and an occupied one differ | How long do you need to get the house ready? |
 | D20 | Nothing about a buyer's own overlaps | Rejected and hidden from results | Allowing: a sure no-show. Travel buffer: an invented number without map data | |
 | D21 | Implied by "openings" | Row locks plus exclusion constraints | Constraints alone: cannot express "active now" or a window closing meanwhile. Locks alone: any code that forgets one allows a double booking | |
@@ -112,34 +121,35 @@ Measured on WSL 2 with 8 CPUs and Docker 29.9. Sizes are from `docker images` an
 
 | Stage | Size | Compressed |
 |---|---|---|
-| `vendor` | 137 MB | 25.4 MB |
+| `vendor` | 142 MB | 25.8 MB |
 | `assets` | 404 MB | 92.4 MB |
-| `runtime` | 136 MB | 26.4 MB |
-| `test` | 226 MB | 39.1 MB |
+| `runtime` | 141 MB | 26.8 MB |
+| `test` | 235 MB | 39.8 MB |
 
 | Layer of `runtime` | Size |
 |---|---|
-| PHP, its extensions and nginx | 52.8 MB |
-| Composer dependencies, without the development ones | 45.4 MB |
+| PHP, its extensions and nginx | 53 MB |
+| Composer dependencies, without the development ones | 49.3 MB |
 | Alpine 3.22 | 8.97 MB |
 | Database folder, mostly the demo photos | 2 MB |
 | Everything else: code, configuration and built assets | under 1 MB |
 
 | Build of `runtime` | Time |
 |---|---|
-| Cold: new builder, no layers, no package caches, base images downloaded | 58.4 s |
+| Cold: new builder, no layers, no package caches, base images downloaded | 52.4 s |
 | Unchanged | 1.8 s |
-| After changing one line of PHP | 2.0 s |
-| After changing one line of Vue (type check, tests and Vite run again) | 8.3 s |
+| After changing one line of PHP | 1.9 s |
+| After changing one line of Vue (type check, tests and Vite run again) | 8.4 s |
 
 Manifests are copied before the source, and Composer and npm use BuildKit cache mounts, so a code change never reinstalls dependencies. The shipped image has no Composer, Node, development dependencies or tests, and runs as the user `app`.
 
 ## How it was built
 
 1. A written plan first, in [docs/plan.md](docs/plan.md): decisions, rules with examples, and numbered acceptance criteria.
-2. For matching, booking and notifications: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
+2. For matching, booking, notifications and push: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
+5. Screens and push were also driven in real browsers. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
 
 ## Known limitations
 
@@ -147,7 +157,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 - A buyer whose free time almost fits a slot does not see the home.
 - With homes in two zones, a range matches local time in both, which does not mean there is time to travel.
 - Adjacent showings in different homes leave no travel time.
-- In-app notifications reach only people who open the application.
+- In-app notifications reach only people who open the application. Push needs a browser that supports it, permission in the browser and in the settings of the operating system, and an internet connection to the push service of that browser.
 - Availability is self-declared, so enforcing it on the server is consistency, not security.
 - Nothing can end at midnight.
 - Two notifications written in the same second can appear in either order.
