@@ -6,7 +6,7 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             user: SessionUser | null;
-            unreadNotifications?: number;
+            unreadNotifications: number | null;
         };
         flashDataType: {
             message?: string;

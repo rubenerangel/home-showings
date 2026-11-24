@@ -3,6 +3,7 @@
 use App\Http\Controllers\Buyer\AvailabilityController;
 use App\Http\Controllers\Buyer\ListingController;
 use App\Http\Controllers\Buyer\ShowingController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,3 +16,6 @@ Route::delete('/availability/{range}', [AvailabilityController::class, 'destroy'
 
 Route::post('/showings', [ShowingController::class, 'store'])->name('showings.store');
 Route::post('/showings/{showing}/cancel', [ShowingController::class, 'cancel'])->where('showing', '[0-9]{1,18}')->name('showings.cancel');
+
+Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications');
+Route::post('/notifications/read', [NotificationController::class, 'read'])->name('notifications.read');

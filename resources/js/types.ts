@@ -54,3 +54,16 @@ export interface ListingMatch extends Omit<ListingFields, 'showing_duration_minu
     photos: Photo[];
     slots: Slot[];
 }
+
+export interface ShowingNotification {
+    id: string;
+    kind: 'booked' | 'cancelled_by_buyer' | 'cancelled_by_seller';
+    showing_id: number;
+    name: string;
+    address: string;
+    timezone: string;
+    starts_at: string;
+    ends_at: string;
+    read: boolean;
+    created_at: string;
+}

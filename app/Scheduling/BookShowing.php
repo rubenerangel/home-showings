@@ -2,10 +2,12 @@
 
 namespace App\Scheduling;
 
+use App\Enums\ShowingEvent;
 use App\Enums\ShowingStatus;
 use App\Models\Showing;
 use App\Models\ShowingWindow;
 use App\Models\User;
+use App\Notifications\ShowingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +36,7 @@ final class BookShowing
             throw new Refused($reason);
         }
 
-        return Refused::onConflict(fn () => Showing::create([
+        $showing = Refused::onConflict(fn () => Showing::create([
             'showing_window_id' => $window->id,
             'listing_id' => $window->listing_id,
             'buyer_id' => $buyer->id,
@@ -45,6 +47,9 @@ final class BookShowing
             'showings_listing_no_overlap' => Refusal::JustBooked,
             'showings_buyer_no_overlap' => Refusal::Overlaps,
         ]);
+        $window->listing->seller->notify(new ShowingChanged($showing, ShowingEvent::Booked));
+
+        return $showing;
     }
 
     private function refusal(User $buyer, Slot $slot, CarbonImmutable $now): ?Refusal

@@ -3,8 +3,10 @@
 namespace App\Scheduling;
 
 use App\Enums\Role;
+use App\Enums\ShowingEvent;
 use App\Enums\ShowingStatus;
 use App\Models\Showing;
+use App\Notifications\ShowingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -31,6 +33,10 @@ final class CancelShowing
                 'status' => $side === Role::Buyer ? ShowingStatus::CancelledByBuyer : ShowingStatus::CancelledBySeller,
                 'cancelled_at' => $now,
             ]);
+
+            $side === Role::Buyer
+                ? $showing->listing->seller->notify(new ShowingChanged($showing, ShowingEvent::CancelledByBuyer))
+                : $showing->buyer->notify(new ShowingChanged($showing, ShowingEvent::CancelledBySeller));
         }, attempts: 3);
     }
 }

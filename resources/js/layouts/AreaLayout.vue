@@ -13,7 +13,7 @@ const page = usePage();
 // Pages of an area are only served to a user with its role.
 const user = computed(() => page.props.user!);
 const links = computed(() => navigation[user.value.role]);
-const unread = computed(() => page.props.unreadNotifications);
+const unread = computed(() => page.props.unreadNotifications ?? 0);
 const path = computed(() => page.url.split('?')[0]);
 </script>
 
@@ -31,7 +31,7 @@ const path = computed(() => page.url.split('?')[0]);
                 >
                     {{ link.label }}
                 </Link>
-                <Link v-if="unread !== undefined" :href="`/${user.role}/notifications`" class="rounded py-1 hover:underline">
+                <Link :href="`/${user.role}/notifications`" class="rounded py-1 hover:underline">
                     Notifications
                     <span v-if="unread > 0" class="ml-1 rounded-full bg-teal-800 px-2 py-0.5 text-xs font-semibold text-white">
                         {{ unread }}<span class="sr-only"> unread</span>

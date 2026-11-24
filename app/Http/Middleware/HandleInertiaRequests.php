@@ -14,6 +14,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'user' => fn () => $request->user()?->only('id', 'name', 'role'),
+            'unreadNotifications' => fn () => $request->user()?->unreadNotifications()->count(),
         ];
     }
 }
