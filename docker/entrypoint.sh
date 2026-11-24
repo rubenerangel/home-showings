@@ -37,6 +37,7 @@ if [ "$1" = "serve" ]; then
     load_key
     php artisan optimize
     php artisan migrate --force
+    php artisan db:seed --force
     serve
 fi
 
