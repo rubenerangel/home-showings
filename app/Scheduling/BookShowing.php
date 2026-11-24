@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class BookShowing
 {
+    public function __construct(private readonly TellOtherSide $tellOtherSide) {}
+
     public function handle(User $buyer, int $windowId, CarbonImmutable $startsAt): Showing
     {
         return DB::transaction(fn () => $this->book($buyer->id, $windowId, $startsAt), attempts: 3);
@@ -46,7 +48,7 @@ final class BookShowing
             'showings_listing_no_overlap' => Refusal::JustBooked,
             'showings_buyer_no_overlap' => Refusal::Overlaps,
         ]);
-        TellOtherSide::that(ShowingEvent::Booked, $showing);
+        $this->tellOtherSide->that(ShowingEvent::Booked, $showing);
 
         return $showing;
     }

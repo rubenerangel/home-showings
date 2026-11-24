@@ -16,6 +16,8 @@ class SessionController extends Controller
 {
     private const MAX_FAILURES = 5;
 
+    public function __construct(private readonly BrowserSubscription $browserSubscription) {}
+
     public function create(): Response
     {
         return Inertia::render('Login');
@@ -41,7 +43,7 @@ class SessionController extends Controller
         }
         RateLimiter::clear($key);
 
-        BrowserSubscription::forget($previous, $request->session());
+        $this->browserSubscription->forget($previous, $request->session());
         $request->session()->regenerate();
 
         return redirect()->route($request->user()->role->home());
@@ -49,7 +51,7 @@ class SessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        BrowserSubscription::forget($request->user(), $request->session());
+        $this->browserSubscription->forget($request->user(), $request->session());
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

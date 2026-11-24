@@ -10,7 +10,7 @@ use App\Notifications\ShowingChangedPush;
 /** Notifies the other side, inside the transaction of the action that calls it. */
 final class TellOtherSide
 {
-    public static function that(ShowingEvent $event, Showing $showing): void
+    public function that(ShowingEvent $event, Showing $showing): void
     {
         $recipient = $event->recipient($showing);
 

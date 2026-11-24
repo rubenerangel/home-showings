@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class CancelShowing
 {
+    public function __construct(private readonly TellOtherSide $tellOtherSide) {}
+
     public function handle(Showing $showing, Role $side): void
     {
         DB::transaction(function () use ($showing, $side) {
@@ -33,7 +35,7 @@ final class CancelShowing
                 'cancelled_at' => $now,
             ]);
 
-            TellOtherSide::that($side === Role::Buyer ? ShowingEvent::CancelledByBuyer : ShowingEvent::CancelledBySeller, $showing);
+            $this->tellOtherSide->that($side === Role::Buyer ? ShowingEvent::CancelledByBuyer : ShowingEvent::CancelledBySeller, $showing);
         }, attempts: 3);
     }
 }

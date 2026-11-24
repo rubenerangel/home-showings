@@ -11,7 +11,7 @@ use NotificationChannels\WebPush\PushSubscription;
 
 class PushSubscriptionController extends Controller
 {
-    public function store(Request $request): Response
+    public function store(Request $request, BrowserSubscription $browserSubscription): Response
     {
         $data = $request->validate([
             'endpoint' => ['bail', 'required', 'string', 'max:'.PushSubscription::ENDPOINT_MAX_LENGTH,
@@ -26,7 +26,7 @@ class PushSubscriptionController extends Controller
             'keys.auth' => ['bail', 'required', 'string', 'regex:/^[A-Za-z0-9_-]{22}={0,2}$/D'],
         ]);
 
-        BrowserSubscription::add($request->user(), $request->session(), $data);
+        $browserSubscription->add($request->user(), $request->session(), $data);
 
         return response()->noContent();
     }

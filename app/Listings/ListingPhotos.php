@@ -31,7 +31,7 @@ final class ListingPhotos
     }
 
     /** @param list<array{file: UploadedFile, room: string}> $photos */
-    public static function add(Listing $listing, array $photos): void
+    public function add(Listing $listing, array $photos): void
     {
         $disk = Storage::disk(self::DISK);
         $stored = [];
@@ -60,7 +60,7 @@ final class ListingPhotos
         }
     }
 
-    public static function remove(ListingPhoto $photo): void
+    public function remove(ListingPhoto $photo): void
     {
         $photo->delete();
         // After the row: a leftover file is harmless, a photo without its file is not.

@@ -12,7 +12,7 @@ use Inertia\Inertia;
 
 class PhotoController extends Controller
 {
-    public function store(Request $request, string $listing): RedirectResponse
+    public function store(Request $request, string $listing, ListingPhotos $listingPhotos): RedirectResponse
     {
         $listing = $request->user()->listings()->findOrFail($listing);
         $data = $request->validate([
@@ -29,7 +29,7 @@ class PhotoController extends Controller
             'photos.*.room.required' => 'Choose a room.',
         ]);
 
-        ListingPhotos::add($listing, $data['photos']);
+        $listingPhotos->add($listing, $data['photos']);
         Inertia::flash('message', count($data['photos']) === 1 ? 'Photo added.' : 'Photos added.');
 
         return redirect()->route('seller.listings.edit', $listing->id);
@@ -44,9 +44,9 @@ class PhotoController extends Controller
         return redirect()->route('seller.listings.edit', $listing);
     }
 
-    public function destroy(Request $request, string $listing, string $photo): RedirectResponse
+    public function destroy(Request $request, string $listing, string $photo, ListingPhotos $listingPhotos): RedirectResponse
     {
-        ListingPhotos::remove($request->user()->listings()->findOrFail($listing)->photos()->findOrFail($photo));
+        $listingPhotos->remove($request->user()->listings()->findOrFail($listing)->photos()->findOrFail($photo));
         Inertia::flash('message', 'Photo removed.');
 
         return redirect()->route('seller.listings.edit', $listing);
