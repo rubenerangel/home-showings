@@ -30,6 +30,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY vite.config.js tsconfig.json ./
 COPY resources resources
 RUN npm run typecheck
+RUN npm test
 RUN npm run build
 
 FROM base AS runtime
