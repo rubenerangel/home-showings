@@ -149,6 +149,8 @@ Every query starts from the signed-in user, for example `$request->user()->listi
 
 Passwords are stored with bcrypt. Five failures in a minute for one email and address stop that email from that address until the minute ends. An unknown email and a wrong password get the same answer. The session id changes when logging in.
 
+Inertia keeps the data of each page in the history of the browser, so after logging out the back button showed the account. The history is now encrypted, its key ends on signing in, registering and logging out, and pages seen with a session are sent with `no-store`.
+
 ## Interface
 
 The visual system is the US street sign: green guides, yellow warns, red stops, and [Overpass](#credits) is derived from the lettering of those signs. The sign with the address is the one bold element, and everything around it is quiet. The tokens and components are in [app.css](resources/css/app.css), without a component library.
@@ -268,7 +270,7 @@ Measured on WSL 2 with 8 CPUs and Docker 29.9. Sizes are from `docker images` an
 |---|---|---|
 | `vendor` | 142 MB | 25.8 MB |
 | `assets` | 404 MB | 92.5 MB |
-| `runtime` | 141 MB | 26.9 MB |
+| `runtime` | 142 MB | 26.9 MB |
 | `test` | 236 MB | 40.0 MB |
 
 | Layer of `runtime` | Size |
@@ -294,7 +296,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 2. Built with Claude Code. For matching, booking, notifications, push, accounts, the API and the public homes: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
-5. Screens and push were also driven in real browsers, with mouse, keyboard and touch. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
+5. Screens and push were also driven in real browsers, with mouse, keyboard and touch. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs. Using the application also showed what no test asked: the back button after logging out, and an email with an incomplete domain. Both became failing tests first, and then a fix.
 6. Two agents with a clean context, which only read: `qa` looks for edge cases in a plan before there is any test, and `reviewer` checks a change with only the plan and the diff. Both are in [.claude/agents](.claude/agents). Changes that were only of the screens did not go through them.
 7. The design rules are in [CLAUDE.md](CLAUDE.md), and `ArchitectureTest` checks the ones that can be read from the code.
 8. Three design skills were the criteria for the screens: see [Interface](#interface). Context7 was the source of the documentation of Docker, Sanctum and Inertia.
@@ -302,6 +304,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 ## Known limitations
 
 - The format of an email is checked, and not that it exists: emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
+- Going back shows nothing of an account after logging out, except in other tabs that were already open. A session that expires by itself does not end the key. Encrypting needs HTTPS or localhost. Going back twice shows the login under the address of the page that was left.
 - In the API, the tokens of an account cannot be listed, only revoked one by one or all together. Lists have no pages, and any origin may call it from a browser, always with a token. A request for a path that ends in `.php`, or over 32 MB, is answered by nginx in HTML.
 - The demo accounts share a password that is written above.
 - The main page has no map, text search or pages. The address and the photos of an available home are public.
