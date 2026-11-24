@@ -2,37 +2,49 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\Role;
-use App\Models\User;
+use App\Accounts\Credentials;
 use App\Push\BrowserSubscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SessionController extends Controller
 {
+    private const MAX_FAILURES = 5;
+
     public function create(): Response
     {
-        $users = User::query()->orderBy('name')->get(['id', 'name', 'role']);
-
-        return Inertia::render('Picker', [
-            'sellers' => $users->where('role', Role::Seller)->values(),
-            'buyers' => $users->where('role', Role::Buyer)->values(),
-        ]);
+        return Inertia::render('Login');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate(['user_id' => ['required', 'integer']]);
-        $user = User::findOrFail($data['user_id']);
+        Credentials::lowerEmail($request);
+        $credentials = $request->validate([
+            'email' => Credentials::EMAIL_RULES,
+            'password' => ['bail', 'required', 'string'],
+        ]);
 
-        BrowserSubscription::forget($request->user(), $request->session());
-        Auth::login($user);
+        // Counted before checking, so attempts sent at once do not get past the limit.
+        $key = 'login:'.hash('sha256', $credentials['email'].'|'.$request->ip());
+        if (RateLimiter::hit($key) > self::MAX_FAILURES) {
+            throw ValidationException::withMessages(['email' => 'Too many attempts. Try again in a minute.']);
+        }
+
+        $previous = $request->user();
+        if (! Auth::attempt($credentials)) {
+            throw ValidationException::withMessages(['email' => 'The email or the password is not right.']);
+        }
+        RateLimiter::clear($key);
+
+        BrowserSubscription::forget($previous, $request->session());
         $request->session()->regenerate();
 
-        return redirect()->route($user->role === Role::Seller ? 'seller.home' : 'buyer.home');
+        return redirect()->route($request->user()->role->home());
     }
 
     public function destroy(Request $request): RedirectResponse
@@ -42,6 +54,6 @@ class SessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('picker');
+        return redirect()->route('login');
     }
 }

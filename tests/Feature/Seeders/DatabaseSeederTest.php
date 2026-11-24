@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\TestWith;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -100,6 +101,21 @@ class DatabaseSeederTest extends TestCase
             $this->assertSame(Room::Exterior, $listing->photos->first()->room);
         }
         Storage::disk('public')->assertExists(ListingPhoto::pluck('path')->all());
+    }
+
+    #[TestWith(['grace@example.com', '/seller'])]
+    #[TestWith(['daniel@example.com', '/seller'])]
+    #[TestWith(['priya@example.com', '/seller'])]
+    #[TestWith(['emma@example.com', '/buyer'])]
+    #[TestWith(['noah@example.com', '/buyer'])]
+    #[TestWith(['olivia@example.com', '/buyer'])]
+    public function test_the_accounts_of_the_readme_can_log_in(string $email, string $area): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->post('/session', ['email' => $email, 'password' => 'maple-street-48'])->assertRedirect($area);
+
+        $this->get($area)->assertOk();
     }
 
     public function test_a_second_start_changes_nothing(): void

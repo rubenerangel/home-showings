@@ -6,24 +6,26 @@ use App\Enums\Role;
 use App\Scheduling\Availability;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
-#[Fillable(['name', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role'])]
+#[Hidden(['password'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasPushSubscriptions, Notifiable;
 
-    /** There are no passwords, so there is nothing to remember. */
+    /** There is no "remember me". */
     protected $rememberTokenName = '';
 
     protected function casts(): array
     {
-        return ['role' => Role::class];
+        return ['password' => 'hashed', 'role' => Role::class];
     }
 
     /** @return HasMany<Listing, $this> */

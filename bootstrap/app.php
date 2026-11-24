@@ -6,6 +6,7 @@ use App\Scheduling\Refused;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,7 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [HandleInertiaRequests::class]);
         $middleware->alias(['role' => EnsureRole::class]);
-        $middleware->redirectGuestsTo(fn () => route('picker'));
+        $middleware->redirectGuestsTo(fn () => route('login'));
+        $middleware->redirectUsersTo(fn (Request $request) => route($request->user()->role->home()));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(Refused::class);

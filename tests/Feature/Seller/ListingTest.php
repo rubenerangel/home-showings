@@ -145,7 +145,7 @@ class ListingTest extends TestCase
     }
 
     #[DataProvider('routes')]
-    public function test_without_a_session_every_route_redirects_to_the_picker(string $method, string $path): void
+    public function test_without_a_session_every_route_redirects_to_the_login(string $method, string $path): void
     {
         $this->call($method, self::path($path, Listing::factory()->create()->id), self::valid())->assertRedirect('/');
         $this->assertDatabaseCount('listings', 1);

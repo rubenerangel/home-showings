@@ -75,14 +75,26 @@ class PushSubscriptionTest extends TestCase
         $this->assertSame([self::ELSEWHERE], PushSubscription::pluck('endpoint')->all());
     }
 
-    public function test_continuing_as_someone_else_without_leaving_removes_it_too(): void
+    public function test_logging_in_as_someone_else_without_leaving_removes_it_too(): void
     {
         $this->actingAs(User::factory()->buyer()->create());
         $this->subscribe();
+        $other = User::factory()->seller()->create(['password' => 'a long password']);
 
-        $this->post('/session', ['user_id' => User::factory()->seller()->create()->id])->assertRedirect('/seller');
+        $this->post('/session', ['email' => $other->email, 'password' => 'a long password'])->assertRedirect('/seller');
 
         $this->assertSame(0, PushSubscription::count());
+    }
+
+    public function test_failing_to_log_in_as_someone_else_keeps_it(): void
+    {
+        $this->actingAs(User::factory()->buyer()->create());
+        $this->subscribe();
+        $other = User::factory()->seller()->create(['password' => 'a long password']);
+
+        $this->post('/session', ['email' => $other->email, 'password' => 'another password'])->assertSessionHasErrors('email');
+
+        $this->assertSame([self::ENDPOINT], PushSubscription::pluck('endpoint')->all());
     }
 
     public function test_leaving_does_not_remove_a_browser_that_already_belongs_to_someone_else(): void

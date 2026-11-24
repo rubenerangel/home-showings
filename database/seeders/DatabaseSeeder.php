@@ -12,7 +12,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Http\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /** Runs on every start, without Faker: the runtime image has no development dependencies. */
@@ -21,7 +23,12 @@ class DatabaseSeeder extends Seeder
     /** Matches are promised for 14 days. The rest is margin for notice and for bookings. */
     private const DAYS = 21;
 
+    /** Of every demo account. It is in the README. */
+    private const PASSWORD = 'maple-street-48';
+
     private CarbonImmutable $today;
+
+    private ?string $password = null;
 
     public function run(): void
     {
@@ -41,9 +48,9 @@ class DatabaseSeeder extends Seeder
 
     private function homes(): void
     {
-        $grace = User::create(['name' => 'Grace Miller', 'role' => Role::Seller]);
-        $daniel = User::create(['name' => 'Daniel Ortiz', 'role' => Role::Seller]);
-        $priya = User::create(['name' => 'Priya Shah', 'role' => Role::Seller]);
+        $grace = $this->user('Grace Miller', Role::Seller);
+        $daniel = $this->user('Daniel Ortiz', Role::Seller);
+        $priya = $this->user('Priya Shah', Role::Seller);
 
         $maple = $this->home($grace, HouseTimezone::Eastern, [
             'address' => '48 Maple Ave', 'city' => 'Albany', 'state' => 'NY',
@@ -89,14 +96,23 @@ class DatabaseSeeder extends Seeder
 
     private function buyers(): void
     {
-        $emma = User::create(['name' => 'Emma Clark', 'role' => Role::Buyer]);
+        $emma = $this->user('Emma Clark', Role::Buyer);
         $this->availability($emma, 1, 1, '9:30', '13:00');
 
-        $noah = User::create(['name' => 'Noah Kim', 'role' => Role::Buyer]);
+        $noah = $this->user('Noah Kim', Role::Buyer);
         $this->availability($noah, 1, 2, '17:00', '20:00');
 
         // No availability yet, to see what a new buyer sees.
-        User::create(['name' => 'Olivia Reed', 'role' => Role::Buyer]);
+        $this->user('Olivia Reed', Role::Buyer);
+    }
+
+    private function user(string $name, Role $role): User
+    {
+        // Hashed once: it is slow on purpose.
+        $this->password ??= Hash::make(self::PASSWORD);
+        $email = Str::lower(Str::before($name, ' ')).'@example.com';
+
+        return User::create(['name' => $name, 'email' => $email, 'password' => $this->password, 'role' => $role]);
     }
 
     /**

@@ -237,7 +237,7 @@ class PhotoTest extends TestCase
         Storage::disk('public')->assertExists($photo->path);
     }
 
-    public function test_buyers_are_forbidden_and_guests_go_to_the_picker(): void
+    public function test_buyers_are_forbidden_and_guests_go_to_the_login(): void
     {
         $this->upload([$this->photo()]);
         $photo = $this->listing->photos()->sole();

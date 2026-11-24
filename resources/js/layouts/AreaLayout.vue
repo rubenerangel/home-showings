@@ -33,7 +33,7 @@ const skip = () => document.getElementById('content')?.focus();
                 <span class="min-w-0 truncate text-sm" translate="no">
                     {{ user.name }}<span class="text-gravel max-sm:sr-only"> ({{ user.role === 'seller' ? 'Seller' : 'Buyer' }})</span>
                 </span>
-                <Link href="/session" method="delete" as="button" class="btn btn-small shrink-0">Switch user</Link>
+                <Link href="/session" method="delete" as="button" class="btn btn-small shrink-0">Log out</Link>
             </div>
             <nav aria-label="Main" class="col-span-2 -mx-4 flex gap-x-4 overflow-x-auto px-4 text-[0.9375rem] sm:mx-0 sm:gap-x-6 sm:px-0 lg:col-span-1 lg:self-stretch">
                 <Link

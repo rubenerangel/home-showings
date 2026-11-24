@@ -12,10 +12,13 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
             $table->string('role', 10);
             $table->timestamps();
         });
         DB::statement("ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('seller', 'buyer'))");
+        DB::statement('ALTER TABLE users ADD CONSTRAINT users_email_check CHECK (email = lower(email))');
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
