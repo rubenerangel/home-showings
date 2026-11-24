@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Scheduling\Refused;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -18,5 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn () => route('picker'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->dontReport(Refused::class);
+        $exceptions->render(fn (Refused $refused) => back()->withErrors(['refusal' => $refused->getMessage()]));
     })->create();
