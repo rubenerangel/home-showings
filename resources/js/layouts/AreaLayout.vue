@@ -2,6 +2,7 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
+import PageMessage from '../components/PageMessage.vue';
 import type { SessionUser } from '../types';
 
 const navigation: Record<SessionUser['role'], { label: string; href: string }[]> = {
@@ -16,52 +17,44 @@ const navigation: Record<SessionUser['role'], { label: string; href: string }[]>
 const page = usePage();
 // Pages of an area are only served to a user with its role.
 const user = computed(() => page.props.user!);
-const links = computed(() => navigation[user.value.role]);
+const links = computed(() => [...navigation[user.value.role], { label: 'Notifications', href: `/${user.value.role}/notifications` }]);
 const unread = computed(() => page.props.unreadNotifications ?? 0);
 const refusal = computed(() => page.props.errors.refusal);
 const path = computed(() => page.url.split('?')[0]);
+const skip = () => document.getElementById('content')?.focus();
 </script>
 
 <template>
-    <header class="border-b border-stone-200 bg-white">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-            <span class="font-semibold text-teal-900">Home Showings</span>
-            <nav aria-label="Main" class="flex gap-4 text-sm">
+    <a href="#content" class="btn btn-primary absolute top-2 left-2 z-30 not-focus:sr-only" @click.prevent="skip">Skip to content</a>
+    <header class="border-b-[3px] border-sign bg-white">
+        <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-4 px-4 sm:px-6 lg:min-h-16 lg:grid-cols-[auto_1fr_auto] lg:gap-x-8">
+            <span class="py-2 text-lg font-extrabold tracking-tight text-sign">Home Showings</span>
+            <div class="flex min-w-0 items-center gap-3 py-2 lg:order-last">
+                <span class="min-w-0 truncate text-sm" translate="no">
+                    {{ user.name }}<span class="text-gravel max-sm:sr-only"> ({{ user.role === 'seller' ? 'Seller' : 'Buyer' }})</span>
+                </span>
+                <Link href="/session" method="delete" as="button" class="btn btn-small shrink-0">Switch user</Link>
+            </div>
+            <nav aria-label="Main" class="col-span-2 -mx-4 flex gap-x-4 overflow-x-auto px-4 text-[0.9375rem] sm:mx-0 sm:gap-x-6 sm:px-0 lg:col-span-1 lg:self-stretch">
                 <Link
                     v-for="link in links"
                     :key="link.href"
                     :href="link.href"
                     :aria-current="path === link.href ? 'page' : undefined"
-                    class="rounded py-1 hover:underline aria-[current=page]:font-semibold aria-[current=page]:text-teal-800"
+                    class="flex min-h-11 shrink-0 items-center gap-1.5 border-b-[3px] border-transparent font-semibold text-gravel -outline-offset-2 hover:text-asphalt aria-[current=page]:border-sign aria-[current=page]:font-bold aria-[current=page]:text-asphalt"
                 >
                     {{ link.label }}
-                </Link>
-                <Link
-                    :href="`/${user.role}/notifications`"
-                    :aria-current="path === `/${user.role}/notifications` ? 'page' : undefined"
-                    class="rounded py-1 hover:underline aria-[current=page]:font-semibold aria-[current=page]:text-teal-800"
-                >
-                    Notifications
-                    <span v-if="unread > 0" class="ml-1 rounded-full bg-teal-800 px-2 py-0.5 text-xs font-semibold text-white">
+                    <span v-if="link.label === 'Notifications' && unread > 0" class="badge badge-caution px-2 text-xs tabular-nums">
                         {{ unread }}<span class="sr-only"> unread</span>
                     </span>
                 </Link>
             </nav>
-            <div class="ml-auto flex items-center gap-3 text-sm">
-                <span>
-                    {{ user.name }} <span class="text-stone-600">({{ user.role === 'seller' ? 'Seller' : 'Buyer' }})</span>
-                </span>
-                <Link href="/session" method="delete" as="button" class="btn py-1">Switch user</Link>
-            </div>
         </div>
     </header>
-    <div role="status" class="mx-auto max-w-5xl px-4">
-        <p v-if="page.flash.message" class="mt-4 rounded-md border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900">
-            {{ page.flash.message }}
-        </p>
+    <!-- Stays in view: the form that caused it may be far down the page. -->
+    <div class="pointer-events-none sticky top-0 z-20 mx-auto max-w-6xl px-4 sm:px-6">
+        <PageMessage kind="done" :text="page.flash.message" />
+        <PageMessage kind="refused" :text="refusal" />
     </div>
-    <div role="alert" class="mx-auto max-w-5xl px-4">
-        <p v-if="refusal" class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">{{ refusal }}</p>
-    </div>
-    <slot />
+    <div id="content" tabindex="-1" class="outline-none"><slot /></div>
 </template>

@@ -15,7 +15,7 @@ final class LocalIntervalInput
             'start' => ['bail', 'required', 'date_format:H:i'],
             'end' => ['bail', 'required', 'date_format:H:i', 'after:start'],
         ], [
-            'required' => 'Choose a :attribute.',
+            'required' => 'Choose the :attribute.',
             'date_format' => 'Choose a valid :attribute.',
             'end.after' => 'The end must be after the start.',
         ], ['start' => 'start time', 'end' => 'end time']);
