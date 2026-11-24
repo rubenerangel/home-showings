@@ -45,17 +45,19 @@ Every demo account has the password `maple-street-48`. You can also create your 
 app/Scheduling/       The rules. No HTTP in here.
   Interval, Availability, Slots, Slot, HouseClock       small immutable values
   OpenSlots                                             the slots each listing has open for a buyer
-  BookShowing, CancelShowing, OpenWindow, CloseWindow   the actions that write
+  BookShowing, CancelShowing, OpenWindow, CloseWindow,
+  AddAvailability                                       the actions that write
   Refusal, Refused                                      why an action is refused, and its exception
 app/Listings/         Photos, and what can be edited while showings exist
-app/Http/             Thin controllers: find the resource of this user, call an action
+app/Http/             Thin controllers, for the pages and under Api/: find the resource of this user, call an action.
+                      Inputs (what is accepted) and presenters (what is answered) are shared by both
 app/Notifications/    In-app notifications, and their push version
-app/Accounts/         What an email must look like, for registering and logging in
+app/Accounts/         Registering, checking a password, issuing a token
 app/Push/             Which browser is subscribed, and which push services are accepted
 resources/js/pages/   One Vue page per screen, under seller/ and buyer/
 database/             Migrations (with the constraints), factories, demo data
 tests/                Unit, Feature, and Feature/Concurrency with real processes
-docs/plan.md          The plan this was built from: rules R1 to R15 and the acceptance criteria
+docs/plan.md          The plan this was built from: rules R1 to R19 and the acceptance criteria
 ```
 
 ### Time
@@ -93,6 +95,60 @@ Every query starts from the signed-in user, for example `$request->user()->listi
 
 Passwords are stored with bcrypt. Five failures in a minute for one email and address stop that email from that address until the minute ends. An unknown email and a wrong password get the same answer. The session id changes when logging in.
 
+## REST API
+
+Everything the pages do, except subscribing a browser to push. Under `/api/v1`, with the same rules, messages and permissions. Try it with the demo data:
+
+```sh
+TOKEN=$(curl -s http://localhost:8080/api/v1/tokens -H 'Content-Type: application/json' \
+  -d '{"email":"emma@example.com","password":"maple-street-48","device_name":"terminal"}' \
+  | sed 's/.*"token":"\([^"]*\)".*/\1/')
+
+curl -s http://localhost:8080/api/v1/buyer/listings -H "Authorization: Bearer $TOKEN"
+```
+
+Each slot of the answer has a `window_id` and a `starts_at`. Sending both books it:
+
+```sh
+curl -s http://localhost:8080/api/v1/buyer/showings -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"window_id":1,"starts_at":"2027-03-10T17:00:00Z"}'
+```
+
+| Who | Route | What it does |
+|---|---|---|
+| Guest | `POST /register` | Creates an account: `name`, `email`, `password`, `password_confirmation`, `role`, `device_name`. Answers its first token |
+| Guest | `POST /tokens` | Logs in: `email`, `password`, `device_name`. Answers a token |
+| Both | `DELETE /tokens/current`, `DELETE /tokens` | Revokes this token, or all the tokens of the account |
+| Both | `GET /me` | The account of the token |
+| Both | `GET /notifications`, `POST /notifications/read` | The latest 50 with the unread count. Marks all as read |
+| Buyer | `GET /buyer/availability`, `POST /buyer/availability` | Ranges. Adds one: `date`, `start`, `end`, on the clock of the house |
+| Buyer | `DELETE /buyer/availability/{range}` | Removes a range |
+| Buyer | `GET /buyer/listings` | The homes with an opening that fits, with their slots |
+| Buyer | `GET /buyer/showings`, `POST /buyer/showings` | Own showings. Books one: `window_id`, `starts_at` in UTC |
+| Buyer | `POST /buyer/showings/{showing}/cancel` | Cancels a showing |
+| Seller | `GET /seller/listing-options` | Accepted states, time zones, durations, notices and rooms |
+| Seller | `GET /seller/listings`, `POST /seller/listings` | Own homes. Creates one |
+| Seller | `GET /seller/listings/{listing}`, `PUT /seller/listings/{listing}` | A home with its photos and what is locked. Edits it, with all its fields |
+| Seller | `GET /seller/listings/{listing}/schedule` | Open windows and showings |
+| Seller | `POST /seller/listings/{listing}/photos` | Adds photos, as multipart: `photos[0][file]`, `photos[0][room]` |
+| Seller | `PATCH /seller/listings/{listing}/photos/{photo}`, `DELETE /seller/listings/{listing}/photos/{photo}` | Changes the `room`, or removes the photo |
+| Seller | `POST /seller/listings/{listing}/windows` | Opens a window: `date`, `start`, `end` |
+| Seller | `POST /seller/windows/{window}/close` | Closes a window |
+| Seller | `POST /seller/showings/{showing}/cancel` | Cancels a showing |
+
+Success is `{"data": ...}`, with `has_availability` beside it in the matches and `unread` in the notifications, or an empty 204. Errors are `{"message": ...}`:
+
+| Status | Meaning |
+|---|---|
+| 401 | No token, or it is unknown, revoked or expired |
+| 403 | The area of the other role |
+| 404 | Someone else's resource, or one that does not exist |
+| 409 | A rule refused it. `reason` has the code, one of the cases of [Refusal](app/Scheduling/Refusal.php) |
+| 422 | Invalid input, with `errors` by field. Also a wrong password |
+| 429 | More than 60 requests in a minute, or five failed logins, which count together with the ones of the pages. `Retry-After` says how long |
+
+A session of the pages does not open the API, so it needs no protection against CSRF.
+
 ## Assumptions and decisions
 
 The brief leaves room. This is what I chose, what I discarded and why, and what I would ask the client.
@@ -101,7 +157,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 |---|---|---|---|---|
 | D1 | "schedule showings" | Immediate confirmation | Seller approval, or a per listing setting: adds pending states, holds and expiry. Publishing "allowed" times already is the seller's consent | Must the seller accept each showing? |
 | D2 | "openings within that availability" | Fixed slots from the window start, private, fully inside the buyer's range | Starts every 15 minutes or at any minute: one 10:15 booking wastes 10:00-10:15 and lowers the seller's capacity. Partial overlap: offers visits the buyer cannot attend in full. Cost of the choice: a buyer who almost fits sees nothing | Private visits? At fixed times or any time in the window? |
-| D3 | "two sided application", then "an application where home sellers" and "a home buyer application" | One application with `/seller` and `/buyer` | Two applications over one API: more setup, same behavior. Agents as actors: the text only names sellers and buyers | Does the owner or an agent schedule? |
+| D3 | "two sided application", then "an application where home sellers" and "a home buyer application" | One application with `/seller` and `/buyer`, and a REST API with the same functionality | Two applications over one API: more setup, same behavior. Agents as actors: the text only names sellers and buyers | Does the owner or an agent schedule? |
 | D4 | "allowed showing dates and times" | Windows on specific dates | Weekly rules with exceptions: the text says dates, and rules need expansion and exceptions | Do the times repeat every week? |
 | D5 | Nothing about a seller changing a window that has showings | Closing refused while a showing is active. Windows are created and closed, not edited | Moving only the end: small gain for now. Cascade cancellation: breaks an immediate promise. Letting the showing outlive the window: a new window could produce overlapping slots | What happens to showings when the seller's plans change? |
 | D6 | "inputs their availability" | Saved per buyer, several ranges on specific dates | A search filter in the URL: the most literal reading, but it is retyped every time and the server cannot apply the same rule as the screen. Weekly pattern: sellers use dates, so it would need expansion and a horizon | One-off search, or a profile they come back to? |
@@ -120,6 +176,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D20 | Nothing about a buyer's own overlaps | Rejected and hidden from results | Allowing: a sure no-show. Travel buffer: an invented number without map data | |
 | D21 | Implied by "openings" | Row locks plus exclusion constraints | Constraints alone: cannot express "active now" or a window closing meanwhile. Locks alone: any code that forgets one allows a double booking | |
 | D22 | Only that the README "provides steps to run the code" | A small multi-stage image and a separate `test` stage | One image with everything: ships Composer, Node and tests. `php:8.4-cli-alpine` as the base: 121 MB against 50.6 MB for `alpine:3.22` with `php84` packages, both with `pdo_pgsql`, before adding the application (`docker images`, measured) | |
+| D23 | Nothing about other systems | `/api/v1` with personal tokens that expire in 30 days, over the same classes as the pages | Pages that consume the API: two steps for what one request does today. Tokens without expiry: a lost one would work forever. No API: other systems could not connect | Which system would connect first, and for whom does it act? |
 
 ## Docker image
 
@@ -130,14 +187,14 @@ Measured on WSL 2 with 8 CPUs and Docker 29.9. Sizes are from `docker images` an
 | Stage | Size | Compressed |
 |---|---|---|
 | `vendor` | 142 MB | 25.8 MB |
-| `assets` | 404 MB | 92.4 MB |
-| `runtime` | 141 MB | 26.8 MB |
-| `test` | 235 MB | 39.8 MB |
+| `assets` | 404 MB | 92.5 MB |
+| `runtime` | 141 MB | 26.9 MB |
+| `test` | 236 MB | 40.0 MB |
 
 | Layer of `runtime` | Size |
 |---|---|
 | PHP, its extensions and nginx | 53 MB |
-| Composer dependencies, without the development ones | 49.3 MB |
+| Composer dependencies, without the development ones | 49.5 MB |
 | Alpine 3.22 | 8.97 MB |
 | Database folder, mostly the demo photos | 2 MB |
 | Everything else: code, configuration and built assets | about 1 MB |
@@ -154,7 +211,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 ## How it was built
 
 1. A written plan first, in [docs/plan.md](docs/plan.md): decisions, rules with examples, and numbered acceptance criteria.
-2. For matching, booking, notifications, push and accounts: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
+2. For matching, booking, notifications, push, accounts and the API: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
 5. Screens and push were also driven in real browsers. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
@@ -162,6 +219,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 ## Known limitations
 
 - Emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
+- In the API, the tokens of an account cannot be listed, only revoked one by one or all together. Lists have no pages, and any origin may call it from a browser, always with a token. A request for a path that ends in `.php`, or over 32 MB, is answered by nginx in HTML.
 - The demo accounts share a password that is written above.
 - A buyer whose free time almost fits a slot does not see the home.
 - With homes in two zones, a range matches local time in both, which does not mean there is time to travel.

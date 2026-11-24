@@ -8,7 +8,7 @@ The brief asks for a two sided application: sellers set up their house as a list
 |---|---|---|
 | D1 | Scheduling | Immediate confirmation, no seller approval |
 | D2 | Openings | Fixed slots anchored at the window start, private, one buyer per slot |
-| D3 | Two sides | One application, areas `/seller` and `/buyer`. Actors are sellers and buyers only |
+| D3 | Two sides | One application, areas `/seller` and `/buyer`, and a REST API with the same functionality. Actors are sellers and buyers only |
 | D4 | Allowed dates and times | Windows on specific dates (date, start, end), not weekly rules |
 | D5 | Changing windows | Windows are created and closed, never edited. Closing is refused while a showing is active |
 | D6 | Availability | Saved per buyer, several ranges on specific dates |
@@ -28,6 +28,7 @@ The brief asks for a two sided application: sellers set up their house as a list
 | D20 | Buyer overlaps | A buyer cannot hold two confirmed showings that overlap. Adjacent is fine |
 | D21 | Double booking | Row locks (buyer, then window) plus PostgreSQL exclusion constraints |
 | D22 | Image | Multi-stage on `alpine:3.22` with `php84` packages. Stages `vendor`, `assets`, `runtime` (the shipped one, unprivileged user) and `test` (`runtime` plus dev dependencies). Manifests before source, BuildKit cache mounts for Composer and npm |
+| D23 | API | `/api/v1`, JSON. Personal access tokens (Laravel Sanctum) that expire 30 days after they are created, whatever their use. Same classes and rules as the web. Subscribing to push is only in the web, because it belongs to a browser. What is done by API does send push to the browsers already subscribed |
 
 Time zones: America/New_York, America/Chicago, America/Denver, America/Phoenix, America/Los_Angeles.
 
@@ -44,6 +45,7 @@ All intervals are half-open: `[start, end)`.
 | availability_ranges | buyer_id, local_starts_at, local_ends_at | end > start, same date |
 | showings | showing_window_id, listing_id, buyer_id, starts_at, ends_at (with time zone), status (`confirmed`, `cancelled_by_buyer`, `cancelled_by_seller`), cancelled_at null | exclusion per listing and per buyer, where confirmed |
 | notifications | Laravel's table | |
+| personal_access_tokens | Sanctum's table: token (hash), expires_at | unique token |
 
 A showing is **active** while it is confirmed and has not ended (`ends_at > now`).
 
@@ -64,6 +66,31 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R13 Address, city and state are locked while the listing has active showings. The zone is locked while it has an open window or any showing. Changing the duration does not touch existing windows.
 - R14 Photos: 0 to 5 per listing, JPG, PNG or WebP, up to 5 MB each. The first one is the cover.
 - R15 Results are ordered by earliest matching slot (UTC), then listing id.
+- R16 Access. Only a Bearer token opens the API: a web session does not, and the API opens none. Guest routes ignore tokens and sessions. Missing, unknown, expired or revoked token: 401. A token is valid strictly before its expiry. The same device_name gives another token. device_name: required, up to 100 characters, no control characters. Logging out of the web revokes nothing.
+- R17 Answers. For `/api/*`, when the request reaches the application: JSON with or without an Accept header, and never a redirect. Success `{"data"}`. Errors `{"message"}`, with no class names. 422 adds `errors`. 409 is exactly a case of `Refusal`, with its code in `reason` and the message of the web. Everything else invalid (R12, R13, R14, wrong credentials) is a 422. Someone else's, missing and malformed ids give the same 404. The other role is a 403. Wrong method is a 405.
+- R18 Limits. Login failures share the counter of the web: over it, 429 with Retry-After. 60 requests a minute for each account, and on guest routes for each address: 429. A bad token, an unknown path and a wrong method are not counted. A missing resource is.
+- R19 Text with a null byte, or that is not UTF-8, is refused in web and API.
+
+## API
+
+Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs are absolute.
+
+| Who | Route | Success |
+|---|---|---|
+| Guest | POST /register (as the web, plus device_name) | 201, user, token, expires_at |
+| Guest | POST /tokens (email, password, device_name) | 201, user, token, expires_at |
+| Both | DELETE /tokens/current, DELETE /tokens (all of the account) | 204 |
+| Both | GET /me | 200 |
+| Both | GET /notifications (latest 50, with `unread` beside `data`), POST /notifications/read | 200, 204 |
+| Buyer | GET, POST /buyer/availability, DELETE /buyer/availability/{id} | 200, 201, 204 |
+| Buyer | GET /buyer/listings (matches with slots, with `has_availability` beside `data`) | 200 |
+| Buyer | GET, POST /buyer/showings, POST /buyer/showings/{id}/cancel | 200, 201, 200 |
+| Seller | GET, POST /seller/listings, GET, PUT /seller/listings/{id} (with photos and locks) | 200, 201, 200, 200 |
+| Seller | POST /seller/listings/{id}/photos (multipart, answers all the photos), PATCH (room), DELETE /seller/listings/{id}/photos/{id} | 201, 200, 204 |
+| Seller | GET /seller/listings/{id}/schedule (windows and showings) | 200 |
+| Seller | POST /seller/listings/{id}/windows, POST /seller/windows/{id}/close | 201, 200 |
+| Seller | POST /seller/showings/{id}/cancel | 200 |
+| Seller | GET /seller/listing-options | 200 |
 
 ## Acceptance criteria
 
@@ -101,9 +128,21 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 | 30 | After 5 failures in a minute for one email and address, even the right password is refused until that minute ends |
 | 31 | The password is stored hashed and never reaches the client or the session |
 | 32 | With a session, the login and registration pages redirect to the area. Logging in as someone else removes the push subscription of this browser, and failing to does not |
+| 33 | Without a valid token every route but the two guest ones is a 401 in JSON, also without an Accept header, also with a web session |
+| 34 | Registering: the account of 27, the refusals of 28 as 422, a working token, no session. Account and token are written together or not at all |
+| 35 | /tokens: same answer for an unknown email and a wrong password. Five failures split between web and API block both. A missing device_name is a 422 that is not counted |
+| 36 | A token is stored hashed, works one second before 30 days and not at 30 days, and revoking one, or all, ends exactly those |
+| 37 | Other role 403. Someone else's, missing and malformed ids: the same 404, and nothing changes |
+| 38 | Buyer: every operation has the effect of the web one, and the matches are the web's |
+| 39 | Every case of `Refusal` is a 409 with its code and message, and writes nothing |
+| 40 | Seller: every operation has the effect of the web one, with R13 and R14 as 422 |
+| 41 | Notifications: the own ones only, unread count, mark all as read. Booking and cancelling by API notify as in 18, and queue push for a subscribed browser |
+| 42 | A slot booked through one door is refused through the other. The web tests do not change |
+| 43 | Request 60 is accepted and 61 is a 429, two tokens of one account share the limit, and it ends after a minute |
+| 44 | The README documents every route (compared once with `route:list`) and has a curl example that was run against the demo data |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 
 ## Out of scope
 
-Email verification, password recovery, "remember me", email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot.
+Email verification, password recovery, "remember me", email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot. In the API: push subscriptions, pagination, abilities per token, listing tokens, other versions, OpenAPI, a list of allowed origins (CORS).
