@@ -69,10 +69,10 @@ const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}
     <Head :title="`Schedule of ${listing.address}`" />
     <main class="page-narrow space-y-6">
         <div class="flex flex-wrap items-end justify-between gap-4">
-            <div>
+            <div class="min-w-0">
                 <p class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <StreetSign small>{{ listing.address }}</StreetSign>
-                    <span>{{ listing.city }}, {{ listing.state }}</span>
+                    <span class="wrap-anywhere">{{ listing.city }}, {{ listing.state }}</span>
                 </p>
                 <h1 class="title">Schedule</h1>
             </div>
@@ -88,7 +88,7 @@ const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}
                 <li v-for="showing in group.showings" :key="showing.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4 last:pb-0">
                     <div>
                         <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
-                        <p class="mt-1 flex flex-wrap items-center gap-2">{{ showing.buyer_name }} <span class="badge badge-sign">{{ statusOf(showing) }}</span></p>
+                        <p class="mt-1 flex flex-wrap items-center gap-2 wrap-anywhere">{{ showing.buyer_name }} <span class="badge badge-sign">{{ statusOf(showing) }}</span></p>
                     </div>
                     <ConfirmButton
                         v-if="showing.cancellable"
@@ -159,7 +159,7 @@ const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}
             <ul v-if="group.showings.length" class="mt-2 divide-y divide-curb">
                 <li v-for="showing in group.showings" :key="showing.id" class="py-4 last:pb-0">
                     <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
-                    <p class="mt-1 flex flex-wrap items-center gap-2">{{ showing.buyer_name }} <span class="badge">{{ statusOf(showing) }}</span></p>
+                    <p class="mt-1 flex flex-wrap items-center gap-2 wrap-anywhere">{{ showing.buyer_name }} <span class="badge">{{ statusOf(showing) }}</span></p>
                 </li>
             </ul>
             <p v-else class="mt-2 text-gravel">{{ group.empty }}</p>

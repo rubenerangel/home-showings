@@ -30,7 +30,7 @@ const skip = () => document.getElementById('content')?.focus();
         <div class="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-4 px-4 sm:px-6 lg:min-h-16 lg:grid-cols-[auto_1fr_auto] lg:gap-x-8">
             <span class="py-2 text-lg font-extrabold tracking-tight text-sign">Home Showings</span>
             <div class="flex min-w-0 items-center gap-3 py-2 lg:order-last">
-                <span class="min-w-0 truncate text-sm" translate="no">
+                <span class="relative min-w-0 truncate text-sm" translate="no">
                     {{ user.name }}<span class="text-gravel max-sm:sr-only"> ({{ user.role === 'seller' ? 'Seller' : 'Buyer' }})</span>
                 </span>
                 <Link href="/session" method="delete" as="button" class="btn btn-small shrink-0">Log out</Link>

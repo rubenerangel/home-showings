@@ -40,7 +40,7 @@ const cancel = (showing: BuyerShowing) => router.post(`/buyer/showings/${showing
                         <div class="min-w-0" :class="{ 'opacity-75': !showing.upcoming }">
                             <p class="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                                 <StreetSign small>{{ showing.listing.address }}</StreetSign>
-                                <span>{{ showing.listing.city }}, {{ showing.listing.state }}</span>
+                                <span class="wrap-anywhere">{{ showing.listing.city }}, {{ showing.listing.state }}</span>
                             </p>
                             <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
                             <span class="badge mt-2" :class="{ 'badge-sign': showing.upcoming }">{{ statusOf(showing) }}</span>

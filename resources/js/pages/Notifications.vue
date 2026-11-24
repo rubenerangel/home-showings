@@ -31,7 +31,7 @@ const received = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeSty
         <PushToggle v-if="pushPublicKey" :public-key="pushPublicKey" class="mt-6" />
         <ul v-if="notifications.length" class="panel mt-6 divide-y divide-curb overflow-clip">
             <li v-for="notification in notifications" :key="notification.id" class="px-5 py-4 sm:px-6" :class="{ 'shadow-[inset_5px_0_0_var(--color-caution)]': !notification.read }">
-                <p>
+                <p class="wrap-anywhere">
                     <span class="font-extrabold">{{ notification.name }}</span> {{ actions[notification.kind] }} at {{ notification.address }}
                     <span v-if="!notification.read" class="badge badge-caution ml-1">New</span>
                 </p>

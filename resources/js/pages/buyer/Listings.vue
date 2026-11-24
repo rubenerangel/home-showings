@@ -37,7 +37,7 @@ defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
                 </div>
                 <div class="min-w-0 p-5 sm:p-7">
                     <div class="flex flex-wrap items-baseline justify-between gap-x-4">
-                        <p class="text-lg font-bold">{{ listing.city }}, {{ listing.state }}</p>
+                        <p class="text-lg font-bold wrap-anywhere">{{ listing.city }}, {{ listing.state }}</p>
                         <p class="text-2xl font-extrabold tracking-tight tabular-nums">{{ formatPrice(listing.price) }}</p>
                     </div>
                     <FactList :facts="formatFacts(listing)" class="mt-1" />
