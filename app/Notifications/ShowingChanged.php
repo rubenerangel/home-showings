@@ -24,13 +24,12 @@ class ShowingChanged extends Notification
     public function toArray(): array
     {
         $listing = $this->showing->listing;
-        $author = $this->event === ShowingEvent::CancelledBySeller ? $listing->seller : $this->showing->buyer;
 
         return [
             'kind' => $this->event->value,
             'showing_id' => $this->showing->id,
-            'name' => $author->name,
-            'address' => "{$listing->address}, {$listing->city}, {$listing->state}",
+            'name' => $this->event->author($this->showing)->name,
+            'address' => $listing->fullAddress(),
             'timezone' => $listing->timezone->value,
             'starts_at' => $this->showing->starts_at->toIso8601ZuluString(),
             'ends_at' => $this->showing->ends_at->toIso8601ZuluString(),

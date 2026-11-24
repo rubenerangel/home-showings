@@ -3,9 +3,10 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 import HouseTime from '../components/HouseTime.vue';
+import PushToggle from '../components/PushToggle.vue';
 import type { ShowingNotification } from '../types';
 
-defineProps<{ notifications: ShowingNotification[] }>();
+defineProps<{ notifications: ShowingNotification[]; pushPublicKey: string | null }>();
 
 const page = usePage();
 const hasUnread = computed(() => (page.props.unreadNotifications ?? 0) > 0);
@@ -27,6 +28,7 @@ const received = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeSty
             <h1 class="text-2xl font-semibold tracking-tight">Notifications</h1>
             <button v-if="hasUnread" type="button" class="btn" @click="readAll">Mark all as read</button>
         </div>
+        <PushToggle v-if="pushPublicKey" :public-key="pushPublicKey" class="mt-6" />
         <ul v-if="notifications.length" class="card mt-6 divide-y divide-stone-200">
             <li v-for="notification in notifications" :key="notification.id" class="px-5 py-4 text-sm" :class="{ 'bg-teal-50': !notification.read }">
                 <p>

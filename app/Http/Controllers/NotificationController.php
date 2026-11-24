@@ -15,6 +15,7 @@ class NotificationController extends Controller
         $notifications = $request->user()->notifications()->limit(50)->get();
 
         return Inertia::render('Notifications', [
+            'pushPublicKey' => config('webpush.vapid.public_key'),
             'notifications' => $notifications->map(fn (DatabaseNotification $notification) => [
                 'id' => $notification->id,
                 ...$notification->data,

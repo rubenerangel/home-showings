@@ -26,7 +26,7 @@ x-postgres: &postgres
 
 services:
   app:
-    build:
+    build: &runtime
       context: .
       target: runtime
     environment: *app-environment
@@ -44,6 +44,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 12
+
+  # Sends the push notifications.
+  worker:
+    build: *runtime
+    command: ["worker"]
+    environment: *app-environment
+    volumes:
+      - keys:/var/lib/home-showings:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
 
   db:
     <<: *postgres

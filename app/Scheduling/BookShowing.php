@@ -7,7 +7,6 @@ use App\Enums\ShowingStatus;
 use App\Models\Showing;
 use App\Models\ShowingWindow;
 use App\Models\User;
-use App\Notifications\ShowingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -47,7 +46,7 @@ final class BookShowing
             'showings_listing_no_overlap' => Refusal::JustBooked,
             'showings_buyer_no_overlap' => Refusal::Overlaps,
         ]);
-        $window->listing->seller->notify(new ShowingChanged($showing, ShowingEvent::Booked));
+        TellOtherSide::that(ShowingEvent::Booked, $showing);
 
         return $showing;
     }

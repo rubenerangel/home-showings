@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { onMounted } from 'vue';
 
+import { dropPush } from '../push';
 import type { SessionUser } from '../types';
 
 defineProps<{ sellers: SessionUser[]; buyers: SessionUser[] }>();
 
-const continueAs = (user: SessionUser) => router.post('/session', { user_id: user.id });
+const page = usePage();
+
+// Nobody is signed in here, so this browser must not keep receiving what was for someone else.
+onMounted(() => {
+    if (!page.props.user) void dropPush();
+});
+
+const continueAs = async (user: SessionUser) => {
+    await dropPush();
+    router.post('/session', { user_id: user.id });
+};
 </script>
 
 <template>

@@ -31,6 +31,11 @@ class Listing extends Model
         ];
     }
 
+    public function fullAddress(): string
+    {
+        return "{$this->address}, {$this->city}, {$this->state}";
+    }
+
     /** @return BelongsTo<User, $this> */
     public function seller(): BelongsTo
     {

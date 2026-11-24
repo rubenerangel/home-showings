@@ -5,8 +5,8 @@ FROM alpine:3.22 AS base
 RUN apk add --no-cache \
         nginx \
         php84 php84-fpm php84-opcache \
-        php84-ctype php84-curl php84-dom php84-fileinfo php84-iconv php84-intl \
-        php84-mbstring php84-openssl php84-pdo_pgsql php84-phar php84-session \
+        php84-bcmath php84-ctype php84-curl php84-dom php84-fileinfo php84-iconv php84-intl \
+        php84-mbstring php84-openssl php84-pcntl php84-pdo_pgsql php84-phar php84-posix php84-session \
         php84-tokenizer php84-xml php84-xmlwriter \
     && ln -sf php84 /usr/bin/php \
     && adduser -S -D -H -u 10001 -G www-data app

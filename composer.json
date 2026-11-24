@@ -7,6 +7,7 @@
     "require": {
         "php": "^8.4",
         "inertiajs/inertia-laravel": "^3.8",
+        "laravel-notification-channels/webpush": "^13.0",
         "laravel/framework": "^13.17"
     },
     "require-dev": {
@@ -40,6 +41,9 @@
         "sort-packages": true,
         "platform": {
             "php": "8.4.27"
+        },
+        "allow-plugins": {
+            "php-http/discovery": false
         }
     },
     "minimum-stability": "stable",

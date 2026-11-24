@@ -2,14 +2,26 @@
 set -eu
 
 # Generated once, kept in a volume, so nobody has to edit an environment file.
-key_file=/var/lib/home-showings/app.key
+keys=/var/lib/home-showings
 
-load_key() {
-    if [ ! -s "$key_file" ]; then
-        (umask 077 && php -r 'echo "base64:".base64_encode(random_bytes(32));' > "$key_file")
+generate_keys() {
+    umask 077
+    if [ ! -s "$keys/app.key" ]; then
+        php -r 'echo "base64:".base64_encode(random_bytes(32));' > "$keys/app.key.new"
+        mv "$keys/app.key.new" "$keys/app.key"
     fi
-    APP_KEY="$(cat "$key_file")"
-    export APP_KEY
+    if [ ! -s "$keys/vapid" ]; then
+        APP_KEY="$(cat "$keys/app.key")" php artisan webpush:vapid --show --no-ansi > "$keys/vapid.new"
+        mv "$keys/vapid.new" "$keys/vapid"
+    fi
+    umask 022
+}
+
+load_keys() {
+    APP_KEY="$(cat "$keys/app.key")"
+    VAPID_PUBLIC_KEY="$(sed -n 's/^VAPID_PUBLIC_KEY=//p' "$keys/vapid")"
+    VAPID_PRIVATE_KEY="$(sed -n 's/^VAPID_PRIVATE_KEY=//p' "$keys/vapid")"
+    export APP_KEY VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY
 }
 
 # The container ends as soon as nginx or php-fpm does.
@@ -34,11 +46,17 @@ serve() {
 }
 
 if [ "$1" = "serve" ]; then
-    load_key
+    generate_keys
+    load_keys
     php artisan optimize
     php artisan migrate --force
     php artisan db:seed --force
     serve
+fi
+
+if [ "$1" = "worker" ]; then
+    load_keys
+    exec php artisan queue:work --sleep=1
 fi
 
 exec "$@"

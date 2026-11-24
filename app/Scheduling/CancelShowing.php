@@ -6,7 +6,6 @@ use App\Enums\Role;
 use App\Enums\ShowingEvent;
 use App\Enums\ShowingStatus;
 use App\Models\Showing;
-use App\Notifications\ShowingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -34,9 +33,7 @@ final class CancelShowing
                 'cancelled_at' => $now,
             ]);
 
-            $side === Role::Buyer
-                ? $showing->listing->seller->notify(new ShowingChanged($showing, ShowingEvent::CancelledByBuyer))
-                : $showing->buyer->notify(new ShowingChanged($showing, ShowingEvent::CancelledBySeller));
+            TellOtherSide::that($side === Role::Buyer ? ShowingEvent::CancelledByBuyer : ShowingEvent::CancelledBySeller, $showing);
         }, attempts: 3);
     }
 }
