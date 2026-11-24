@@ -31,6 +31,7 @@ The brief asks for a two sided application: sellers set up their house as a list
 | D23 | API | `/api/v1`, JSON. Personal access tokens (Laravel Sanctum) that expire 30 days after they are created, whatever their use. Same classes and rules as the web. Subscribing to push is only in the web, because it belongs to a browser. What is done by API does send push to the browsers already subscribed |
 | D24 | Main page | `/` is public: every available home, by state and city. `/homes/{id}` is one of them. The login is in `/login` |
 | D25 | What a guest sees | Photos, address, price, facts, description, zone, and the days with openings. The times only with a buyer account |
+| D26 | Email format | Checked in the page, in the server and in the database, with one pattern. The database has the last word |
 
 Time zones: America/New_York, America/Chicago, America/Denver, America/Phoenix, America/Los_Angeles.
 
@@ -40,7 +41,7 @@ All intervals are half-open: `[start, end)`.
 
 | Table | Columns | Database guarantees |
 |---|---|---|
-| users | name, email, password (hash), role (`seller`, `buyer`) | role check, unique email in lower case |
+| users | name, email, password (hash), role (`seller`, `buyer`) | role check, unique email, complete and in lower case (R26) |
 | listings | seller_id, address, city, state, price (whole dollars, from 1), bedrooms (from 0), bathrooms (from 0.5, steps of 0.5), description null, timezone, showing_duration_minutes, min_notice_hours | checks on timezone, duration and notice |
 | listing_photos | listing_id, path, room (exterior, living_room, kitchen, bedroom, bathroom, other), position | unique (listing_id, position) |
 | showing_windows | listing_id, local_starts_at, local_ends_at (without time zone), duration_minutes, closed_at null | end > start, same date, exclusion of overlaps per listing among open windows |
@@ -78,6 +79,7 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R23 A guest who wants to book goes to register, or to log in, and comes back to that home. A seller goes to their area. A home that does not exist or is no longer available is ignored. The home travels in the form, and is checked when it is sent.
 - R24 A buyer sees every open slot of a home, and which ones fit. With an active showing there, the showing and no slots.
 - R25 A home that never had a window is a 404. One with no openings says so.
+- R26 A complete email, in lower case ASCII, up to 255 characters. Before the `@`: letters, digits and the symbols of an unquoted name, with single dots between them. After it: two or more labels of 1 to 63 letters, digits or hyphens, with no hyphen first or last. The last one has 2 or more and starts with a letter. One that logging in would not accept is not registered either. It does not prove that the address exists. The length is the limit of the column.
 
 ## API
 
@@ -168,6 +170,14 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 59 | My homes by state and city, when there is more than one |
 | 60 | Screens: 320 px, keyboard, empty states, with and without photos |
 | 61 | Pages are encrypted in the history of the browser, and the ones seen with a session are not kept in its cache. Signing in, registering and logging out end the key, so going back shows nothing of that account. Failing to log in does not. Pages of a guest can be kept |
+| 62 | The database refuses by itself (23514) inserting, or changing to, an email that is not complete (R26), and accepts the ones that are |
+| 63 | Registering with one is an error on the email in the web, with the errors of the other fields, and a 422 in the API. No account, no session, no token |
+| 64 | With the validation of the server out of the way, the database stops it, and the answer is the same error on the email and never a server error. Nothing is written. Another constraint is not taken for an email |
+| 65 | JavaScript, PHP and PostgreSQL agree on the same list, with line breaks |
+| 66 | Logging in does not change |
+| 67 | The migration keeps complete emails. With one that is not, it fails and changes nothing |
+| 68 | A refusal leaves no email and no hash in the logs (compared once) |
+| 69 | In the page, the error shows on leaving the field and on sending, nothing is sent, and the corrected one is. Keyboard, 320 px. What the server removes around it is not an error (the page was checked in a browser) |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 

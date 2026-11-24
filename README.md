@@ -20,7 +20,7 @@ Open http://localhost:8080. The first start generates the application and push k
 | Run one test class | `docker compose run --rm test vendor/bin/phpunit --filter BookingTest` |
 | Use another port | `APP_PORT=8090 docker compose up --build` |
 | Stop | `docker compose down` |
-| Stop and delete all data (also needed if you ran a version without accounts) | `docker compose --profile test down --volumes` |
+| Stop and delete all data (also needed if you ran a version without accounts, or have an account with an incomplete email: the migration refuses it) | `docker compose --profile test down --volumes` |
 
 `vue-tsc` and the Node tests run while the image of `test` is built, so Docker skips them when nothing under `resources/` or the manifests changed. Pint and PHPUnit run in the container every time. The tests use their own database server, in memory, so they never touch the data of the application.
 
@@ -113,6 +113,29 @@ Windows and availability are stored as **local times without a zone**: they mean
 4. Insert the showing and the notification, or neither.
 
 If some code ever forgets a lock, PostgreSQL exclusion constraints still reject two confirmed showings that overlap, by listing and by buyer. That error (`23P01`) becomes a normal refusal and not a server error. `tests/Feature/Concurrency` runs real processes released together: ten buyers on one slot, one buyer on two homes, booking against closing in both orders, both sides cancelling at once.
+
+### The database has the last word
+
+**The data is the most important part of this application, so the rules that protect it do not depend on the code that writes it.** The page helps, the server decides, and PostgreSQL refuses what should never be stored, also from a script, a console or a bug:
+
+| Data | What the database refuses |
+|---|---|
+| Email | One that is not complete, like `test@testco`, with capitals, or taken |
+| Account | An unknown role, or no password |
+| Home | A price, rooms, zone, duration or notice outside the allowed values. A photo with an unknown room, or in a taken position |
+| Window and availability | An end that is not after the start, or on another date. Two open windows of one home that overlap |
+| Showing | Two confirmed ones that overlap, by home and by buyer. A status that contradicts its cancellation |
+
+The email shows how the layers work together. The pattern is in [EmailFormat.php](app/Accounts/EmailFormat.php): the server applies it and the page receives it. A migration keeps the copy that it made a constraint, because a migration does not change later, and a test fails if they differ. JavaScript, PHP and PostgreSQL run the same list of addresses. To check it, the layers were turned off one by one, registering with `test@testco` in a browser:
+
+| Turned off | Who stopped it | What the person sees |
+|---|---|---|
+| Nothing | The page, and nothing is sent | The error under the field |
+| The page | The server | The same error |
+| The page and the server | The database (`23514`, `users_email_check`) | The same error, and not a server error |
+| Everything, with SQL in `psql` | The database | |
+
+PostgreSQL writes the refused row in its log, with the email and the password hash, so in `compose.yaml` it is told not to (`log_error_verbosity=terse`).
 
 ### Notifications
 
@@ -233,6 +256,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D23 | Nothing about other systems | `/api/v1` with personal tokens that expire in 30 days, over the same classes as the pages | Pages that consume the API: two steps for what one request does today. Tokens without expiry: a lost one would work forever. No API: other systems could not connect | Which system would connect first, and for whom does it act? |
 | D24 | "is shown listings" | A public main page with every available home, by state and city, besides the search by availability | Only the search: a buyer has to enter times before seeing a home. A map or a text search: more than five homes would need them | Are homes found here, or do buyers arrive from another site? |
 | D25 | Nothing about visitors | A guest sees address, photos, price and the days with openings, and the times only as a buyer | Showing the times to anyone: they tell when a home is empty. Hiding the address: the home could not be recognized | Can the address be public? |
+| D26 | Nothing about the format of an email | One pattern in the page, the server and the database, which has the last word | Only the rule of the framework: it accepts a domain without a dot. Only in the server: any other code could store it. Asking the DNS: registering would depend on the network, and it does not prove that the mailbox exists. `NOT VALID`: it would leave the bad ones already stored | Should the address be confirmed with a message? |
 
 ## Docker image
 
@@ -277,7 +301,7 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 
 ## Known limitations
 
-- Emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
+- The format of an email is checked, and not that it exists: emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
 - In the API, the tokens of an account cannot be listed, only revoked one by one or all together. Lists have no pages, and any origin may call it from a browser, always with a token. A request for a path that ends in `.php`, or over 32 MB, is answered by nginx in HTML.
 - The demo accounts share a password that is written above.
 - The main page has no map, text search or pages. The address and the photos of an available home are public.

@@ -6,9 +6,11 @@ import { clearEdited } from '../clearEdited';
 import AccountPage from '../components/AccountPage.vue';
 import FieldError from '../components/FieldError.vue';
 import FormField from '../components/FormField.vue';
+import { emailError, type EmailFormat } from '../emailFormat';
+import { focusFirstError } from '../focus';
 import type { SessionUser, WantedHome } from '../types';
 
-const props = defineProps<{ home: WantedHome | null }>();
+const props = defineProps<{ home: WantedHome | null; emailFormat: EmailFormat }>();
 
 const roles: { value: SessionUser['role']; label: string; hint: string }[] = [
     { value: 'buyer', label: 'Buyer', hint: 'I want to visit homes' },
@@ -29,11 +31,18 @@ const { busy, submit } = useAccountSubmit(
     (options) => form.post('/register', options),
     () => form.reset('password', 'password_confirmation'),
 );
+
+const checkEmail = () => {
+    const error = emailError(form.email, props.emailFormat);
+    if (error) form.setError('email', error);
+    return !error;
+};
+const register = () => (checkEmail() ? submit() : focusFirstError());
 </script>
 
 <template>
     <AccountPage title="Create an account" :lead="home ? `To book a showing at ${home.address}.` : 'One account is either for buying or for selling.'">
-        <form class="space-y-4" novalidate @input="clearError" @submit.prevent="submit">
+        <form class="space-y-4" novalidate @input="clearError" @submit.prevent="register">
             <fieldset :aria-describedby="form.errors.role ? 'role-error' : undefined">
                 <legend class="mb-1.5 text-[0.9375rem] font-bold">I am a</legend>
                 <div class="grid gap-3 sm:grid-cols-2">
@@ -62,7 +71,7 @@ const { busy, submit } = useAccountSubmit(
                 <input v-bind="control" v-model="form.name" type="text" maxlength="255" autocomplete="name" />
             </FormField>
             <FormField v-slot="{ control }" label="Email" name="email" :error="form.errors.email">
-                <input v-bind="control" v-model="form.email" type="email" maxlength="255" autocomplete="username" autocapitalize="none" spellcheck="false" />
+                <input v-bind="control" v-model="form.email" type="email" maxlength="255" autocomplete="username" autocapitalize="none" spellcheck="false" @blur="checkEmail" />
             </FormField>
             <FormField v-slot="{ control }" label="Password" name="password" :error="form.errors.password" hint="At least 8 characters">
                 <input v-bind="control" v-model="form.password" type="password" autocomplete="new-password" />

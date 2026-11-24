@@ -2,6 +2,7 @@
 
 namespace App\Http;
 
+use App\Accounts\EmailFormat;
 use App\Enums\Role;
 use Closure;
 use Illuminate\Http\Request;
@@ -17,7 +18,9 @@ final class AccountInput
     private const ONE_LINE = 'regex:/^[^\x00-\x1F\x7F]+$/uD';
 
     /** ASCII only, so PHP and PostgreSQL always agree on the lower case of an email. */
-    private const EMAIL = ['bail', 'required', 'string', 'max:255', 'regex:/^[\x21-\x7E]+$/D', 'email'];
+    private const ASCII = 'regex:/^[\x21-\x7E]+$/D';
+
+    private const EMAIL = ['bail', 'required', 'string', 'max:255'];
 
     /**
      * @param  array<string, list<mixed>>  $extra  more rules
@@ -29,7 +32,7 @@ final class AccountInput
 
         return $request->validate([
             'name' => ['bail', 'required', 'string', 'max:255', self::ONE_LINE],
-            'email' => [...self::EMAIL, 'unique:users'],
+            'email' => [...self::EMAIL, self::complete(...), 'email', 'unique:users'],
             'password' => ['bail', 'required', 'string', 'confirmed', 'min:8', self::hashable(...)],
             'role' => ['bail', 'required', 'string', Rule::enum(Role::class)],
             ...$extra,
@@ -45,7 +48,7 @@ final class AccountInput
         self::lowerEmail($request);
 
         return $request->validate([
-            'email' => self::EMAIL,
+            'email' => [...self::EMAIL, self::ASCII, 'email'],
             'password' => ['bail', 'required', 'string'],
             ...$extra,
         ]);
@@ -56,6 +59,13 @@ final class AccountInput
         $email = $request->input('email');
         if (is_string($email)) {
             $request->merge(['email' => Str::lower($email)]);
+        }
+    }
+
+    private static function complete(string $attribute, string $value, Closure $fail): void
+    {
+        if (! EmailFormat::isComplete($value)) {
+            $fail(EmailFormat::MESSAGE);
         }
     }
 

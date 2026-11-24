@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Accounts\EmailFormat;
 use App\Accounts\RegisterUser;
 use App\Http\AccountInput;
 use App\Http\AfterSignIn;
@@ -17,7 +18,10 @@ class RegistrationController extends Controller
 
     public function create(Request $request): Response
     {
-        return Inertia::render('Register', ['home' => $this->afterSignIn->wanted($request->query('home'))]);
+        return Inertia::render('Register', [
+            'home' => $this->afterSignIn->wanted($request->query('home')),
+            'emailFormat' => ['pattern' => EmailFormat::PATTERN, 'message' => EmailFormat::MESSAGE],
+        ]);
     }
 
     public function store(Request $request, RegisterUser $registerUser): RedirectResponse
