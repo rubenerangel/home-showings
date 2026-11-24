@@ -1,0 +1,103 @@
+# Plan
+
+The brief asks for a two sided application: sellers set up their house as a listing with "allowed showing dates and times", and a buyer "inputs their availability, and is shown listings that have openings within that availability that they can schedule showings on".
+
+## Decisions
+
+| # | Topic | Decision |
+|---|---|---|
+| D1 | Scheduling | Immediate confirmation, no seller approval |
+| D2 | Openings | Fixed slots anchored at the window start, private, one buyer per slot |
+| D3 | Two sides | One application, areas `/seller` and `/buyer`. Actors are sellers and buyers only |
+| D4 | Allowed dates and times | Windows on specific dates (date, start, end), not weekly rules |
+| D5 | Changing windows | Windows are created and closed, never edited. Closing is refused while a showing is active |
+| D6 | Availability | Saved per buyer, several ranges on specific dates |
+| D7 | What a buyer can book | Only slots fully inside their availability |
+| D8 | Showings per home | One active showing per buyer and listing |
+| D9 | Relevant information | Address, city, state, price, bedrooms, bathrooms, short description, 0 to 5 photos with a room label |
+| D10 | Listings per seller | Several. Listings are not deleted: with no open windows they leave the results |
+| D11 | Stack | PHP 8.4, Laravel 13, Inertia 3, Vue 3.5, TypeScript 6.0.3, Vite 8, Tailwind 4, PostgreSQL 18, PHPUnit 12, Docker Compose |
+| D12 | Authentication | "Continue as" user picker over a real session. One role per user, authorization on the server |
+| D13 | Duration | On the listing (15, 30, 45, 60 min, default 30), copied to each window when created |
+| D14 | Time zone | Per listing. Windows and availability are local to the house. Showings store UTC instants |
+| D15 | Overlapping windows | Rejected within a listing, adjacent ones accepted |
+| D16 | Cancelling | Both sides, before the start. Buyer frees the slot, seller closes it |
+| D17 | Notifications | In-app, written in the same transaction |
+| D18 | Creative extra | Web push, separate per side, only after the MVP is finished and tested |
+| D19 | Minimum notice | Per listing: 0, 2, 12, 24 or 48 h, default 2. Exactly the limit is valid |
+| D20 | Buyer overlaps | A buyer cannot hold two confirmed showings that overlap. Adjacent is fine |
+| D21 | Double booking | Row locks (buyer, then window) plus PostgreSQL exclusion constraints |
+| D22 | Image | Multi-stage on `alpine:3.22` with `php84` packages. Stages `vendor`, `assets`, `runtime` (the shipped one, unprivileged user) and `test` (`runtime` plus dev dependencies). Manifests before source, BuildKit cache mounts for Composer and npm |
+
+Time zones: America/New_York, America/Chicago, America/Denver, America/Phoenix, America/Los_Angeles.
+
+## Data model
+
+All intervals are half-open: `[start, end)`.
+
+| Table | Columns | Database guarantees |
+|---|---|---|
+| users | name, role (`seller`, `buyer`) | role check |
+| listings | seller_id, address, city, state, price (whole dollars, from 1), bedrooms (from 0), bathrooms (from 0.5, steps of 0.5), description null, timezone, showing_duration_minutes, min_notice_hours | checks on timezone, duration and notice |
+| listing_photos | listing_id, path, room (exterior, living_room, kitchen, bedroom, bathroom, other), position | unique (listing_id, position) |
+| showing_windows | listing_id, local_starts_at, local_ends_at (without time zone), duration_minutes, closed_at null | end > start, same date, exclusion of overlaps per listing among open windows |
+| availability_ranges | buyer_id, local_starts_at, local_ends_at | end > start, same date |
+| showings | showing_window_id, listing_id, buyer_id, starts_at, ends_at (with time zone), status (`confirmed`, `cancelled_by_buyer`, `cancelled_by_seller`), cancelled_at null | exclusion per listing and per buyer, where confirmed |
+| notifications | Laravel's table | |
+
+A showing is **active** while it is confirmed and has not ended (`ends_at > now`).
+
+## Rules
+
+- R1 Slots. Window 10:00-11:10, 30 min: 10:00 and 10:30, 10 min unused. Window 10:00-10:45, 60 min: rejected.
+- R2 Availability ranges that touch or overlap are merged. 10:00-10:30 and 10:30-11:00 fit slot 10:15-10:45.
+- R3 A slot matches when it is fully inside a merged range. Window 10:00-12:00, 30 min, buyer 10:10-11:20: only 10:30.
+- R4 Notice. 9:00 in Denver with 2 h: 10:30 hidden, 11:00 shown. A slot that has started can never be booked, even with no notice (`starts_at > now` and `starts_at >= now + notice`).
+- R5 A slot is open for a buyer when its window is not closed, R3 and R4 hold, no confirmed showing of the listing overlaps it, no showing cancelled by the seller in the same window overlaps it, it does not overlap a confirmed showing of the buyer, and the buyer has no active showing on that listing.
+- R6 Booking locks the buyer, then the window, reads the clock after the locks and checks everything again. The client sends window and start; the server derives the end. Refusal reasons, in this order: not available, notice, outside availability, already has a showing at this home, just booked, overlaps another showing.
+- R7 Closing is refused with active showings. Showing 10:00-10:30: refused at 10:15, allowed at 10:30.
+- R8 Cancelling: only while confirmed and before the start, once. A slot cancelled by the seller stays closed in that window; a new window opens it again.
+- R9 UTC. Denver 10:00 is 17:00Z on 2027-03-13 and 16:00Z on 2027-03-15. Phoenix 10:00 is 17:00Z on both days.
+- R10 Permissions. Someone else's resource: 404. The other role's area: 403. No session: redirect to the picker.
+- R11 On a day with a daylight-saving change in the listing's zone, a window must start at 3:00 AM or later.
+- R12 A window must start in the future. An availability range is past once it is over in Pacific time; past ranges are rejected on create and hidden afterwards. Nothing ends at midnight.
+- R13 Address, city and state are locked while the listing has active showings. The zone is locked while it has an open window or any showing. Changing the duration does not touch existing windows.
+- R14 Photos: 0 to 5 per listing, JPG, PNG or WebP, up to 5 MB each. The first one is the cover.
+- R15 Results are ordered by earliest matching slot (UTC), then listing id.
+
+## Acceptance criteria
+
+| # | Criterion |
+|---|---|
+| 1 | Slots, leftover and short window as in R1 |
+| 2 | Merging and fit as in R2 and R3, on both boundaries |
+| 3 | A listing with no bookable slot is not shown. With no ranges, a message points to adding availability |
+| 4 | Notice as in R4, on both sides of the limit |
+| 5 | Range 10:00-12:00 matches 10:00 in Denver and 10:00 in New York |
+| 6 | Not offered: booked, closed, cancelled by the seller, overlapping the buyer's showings, listings with an active showing of the buyer. Cancelled by the buyer is offered again if R4 holds |
+| 7 | Booking creates one confirmed showing with the instants in R9 |
+| 8 | Each reason in R6 is refused with its message and writes nothing |
+| 9 | Ten processes released together on one slot: 1 confirmed, 9 business refusals, 0 server errors, 1 notification |
+| 10 | A direct overlapping insert fails with SQLSTATE 23P01, by listing and by buyer |
+| 11 | One buyer from two processes, overlapping slots in two homes, or two slots of the same home in different windows: one confirmed |
+| 12 | Booking and closing at once, in both orders: no closed window has a showing that ends after the closing |
+| 13 | Cancelling as in R8. Both sides at once: one final status, one notification |
+| 14 | Closing as in R7, at the three moments |
+| 15 | Overlapping windows rejected naming the conflict, also when simultaneous. Adjacent ones accepted |
+| 16 | R11, R12 and R13 |
+| 17 | Permissions as in R10 |
+| 18 | Booked notifies the seller, cancelled by buyer notifies the seller, cancelled by seller notifies the buyer. If the operation fails there is no notification |
+| 19 | Seller: create and edit listings with photos (R14), add and close windows with a preview, see and cancel showings |
+| 20 | Buyer: add and remove ranges, see listings and slots with a photo carousel, book, see and cancel showings |
+| 21 | House time with its zone, and the browser's time only if it differs on that date, with the date if it changes |
+| 22 | Unread count and list on both sides, "Mark all as read" |
+| 23 | Clean clone and `docker compose up`: matches on any first-start date, for 14 days. A second start neither duplicates nor deletes |
+| 24 | The suite runs with one documented command, `docker compose run --rm test` |
+| 25 | (Push extra) Each side gets only its own notifications, with the tab closed. Switching user removes the subscription |
+| 26 | The `runtime` image has no Composer, Node, dev dependencies or tests, and runs as an unprivileged user. The README shows measured sizes per stage (`docker history`) and build times: cold, unchanged, and after a one-line change |
+
+Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
+
+## Out of scope
+
+Real accounts, email or SMS, recurring windows, agents as actors, travel time between homes, several buyers per slot.
