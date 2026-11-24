@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 
 import { formatRoom } from '../format';
 import type { Photo } from '../types';
+import NoPhotos from './NoPhotos.vue';
 
 // https://www.w3.org/WAI/ARIA/apg/patterns/carousel/ without automatic rotation.
 const props = defineProps<{ photos: Photo[]; label: string }>();
@@ -38,7 +39,7 @@ const arrow =
 </script>
 
 <template>
-    <div v-if="count === 0" class="flex aspect-3/2 items-center justify-center bg-curb/50 text-gravel">No photos yet</div>
+    <NoPhotos v-if="count === 0" />
     <section
         v-else
         aria-roledescription="carousel"

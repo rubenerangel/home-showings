@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 import FactList from '../../components/FactList.vue';
+import NoPhotos from '../../components/NoPhotos.vue';
 import StreetSign from '../../components/StreetSign.vue';
 import { formatFacts, formatPrice, formatTimezone } from '../../format';
 import { byPlace, groupByCity } from '../../places';
@@ -39,7 +40,7 @@ const grouped = computed(() => places.value.length > 1);
                         <div class="relative">
                             <component :is="grouped ? 'h3' : 'h2'" class="absolute top-4 left-4 max-w-[calc(100%-2rem)]"><StreetSign>{{ listing.address }}</StreetSign></component>
                             <img v-if="listing.cover" :src="listing.cover.url" alt="" width="1200" height="800" class="aspect-3/2 w-full object-cover" />
-                            <div v-else class="flex aspect-3/2 items-center justify-center bg-curb/50 text-gravel">No photos yet</div>
+                            <NoPhotos v-else />
                         </div>
                         <div class="flex grow flex-col p-5 sm:p-6">
                             <div class="flex flex-wrap items-baseline justify-between gap-x-4">

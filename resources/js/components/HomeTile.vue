@@ -4,6 +4,7 @@ import { Link } from '@inertiajs/vue3';
 import { formatCount, formatDate, formatPrice, formatRoom } from '../format';
 import type { HomeCard } from '../types';
 import FactList from './FactList.vue';
+import NoPhotos from './NoPhotos.vue';
 import StreetSign from './StreetSign.vue';
 
 defineProps<{ home: HomeCard; eager?: boolean }>();
@@ -22,7 +23,7 @@ defineProps<{ home: HomeCard; eager?: boolean }>();
                 height="800"
                 class="col-start-1 row-start-1 aspect-3/2 w-full object-cover"
             />
-            <div v-else class="col-start-1 row-start-1 flex aspect-3/2 w-full min-w-0 self-start items-center justify-center bg-curb/50 text-gravel">No photos yet</div>
+            <NoPhotos v-else class="col-start-1 row-start-1 self-start" />
             <h3 class="col-start-1 row-start-1 min-w-0 self-start p-3">
                 <!-- The whole tile is the link. -->
                 <Link :href="`/homes/${home.id}`" class="home-tile-link"><StreetSign small>{{ home.address }}</StreetSign></Link>
