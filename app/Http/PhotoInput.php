@@ -34,6 +34,17 @@ final class PhotoInput
         return $request->validate(['room' => self::roomRules()])['room'];
     }
 
+    /** @return list<int> */
+    public static function order(Request $request): array
+    {
+        $data = $request->validate([
+            'photos' => ['bail', 'required', 'list'],
+            'photos.*' => ['bail', 'integer', 'distinct'],
+        ]);
+
+        return array_map(intval(...), $data['photos']);
+    }
+
     /** @return list<mixed> */
     private static function roomRules(): array
     {

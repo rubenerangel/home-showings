@@ -26,7 +26,7 @@ class AccessTest extends TestCase
     private const SELLER = [
         'GET /seller/listing-options', 'GET /seller/listings', 'POST /seller/listings',
         'GET /seller/listings/{listing}', 'PUT /seller/listings/{listing}', 'GET /seller/listings/{listing}/schedule',
-        'POST /seller/listings/{listing}/photos', 'PATCH /seller/listings/{listing}/photos/{photo}',
+        'POST /seller/listings/{listing}/photos', 'PUT /seller/listings/{listing}/photos/order', 'PATCH /seller/listings/{listing}/photos/{photo}',
         'DELETE /seller/listings/{listing}/photos/{photo}', 'POST /seller/listings/{listing}/windows',
         'POST /seller/windows/{window}/close', 'POST /seller/showings/{showing}/cancel',
     ];

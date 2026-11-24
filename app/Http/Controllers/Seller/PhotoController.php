@@ -22,6 +22,15 @@ class PhotoController extends Controller
         return redirect()->route('seller.listings.edit', $listing->id);
     }
 
+    public function order(Request $request, string $listing, ListingPhotos $listingPhotos): RedirectResponse
+    {
+        $listing = $request->user()->listings()->findOrFail($listing);
+        $listingPhotos->reorder($listing, PhotoInput::order($request));
+        Inertia::flash('message', 'Order saved.');
+
+        return redirect()->route('seller.listings.edit', $listing->id);
+    }
+
     public function update(Request $request, string $listing, string $photo, ListingPhotos $listingPhotos): RedirectResponse
     {
         $photo = $request->user()->listings()->findOrFail($listing)->photos()->findOrFail($photo);

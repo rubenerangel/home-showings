@@ -42,6 +42,7 @@ Route::middleware(['auth:sanctum', 'throttle:api'])
             Route::put('/listings/{listing}', [Seller\ListingController::class, 'update']);
             Route::get('/listings/{listing}/schedule', [Seller\ScheduleController::class, 'show']);
             Route::post('/listings/{listing}/photos', [Seller\PhotoController::class, 'store']);
+            Route::put('/listings/{listing}/photos/order', [Seller\PhotoController::class, 'order']);
             Route::patch('/listings/{listing}/photos/{photo}', [Seller\PhotoController::class, 'update']);
             Route::delete('/listings/{listing}/photos/{photo}', [Seller\PhotoController::class, 'destroy']);
             Route::post('/listings/{listing}/windows', [Seller\WindowController::class, 'store']);

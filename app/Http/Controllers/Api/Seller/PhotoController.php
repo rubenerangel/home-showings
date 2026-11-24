@@ -23,6 +23,14 @@ class PhotoController extends Controller
         return response()->json(['data' => $listing->photos->map($this->presenter->photo(...))], 201);
     }
 
+    public function order(Request $request, string $listing, ListingPhotos $listingPhotos): JsonResponse
+    {
+        $listing = $request->user()->listings()->findOrFail($listing);
+        $listingPhotos->reorder($listing, PhotoInput::order($request));
+
+        return response()->json(['data' => $listing->photos->map($this->presenter->photo(...))]);
+    }
+
     public function update(Request $request, string $listing, string $photo, ListingPhotos $listingPhotos): JsonResponse
     {
         $photo = $this->find($request, $listing, $photo);

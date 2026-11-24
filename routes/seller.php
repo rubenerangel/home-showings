@@ -11,6 +11,9 @@ Route::get('/', [ListingController::class, 'index'])->name('home');
 Route::resource('listings', ListingController::class)
     ->only(['create', 'store', 'edit', 'update'])
     ->where(['listing' => '[0-9]{1,18}']);
+Route::put('/listings/{listing}/photos/order', [PhotoController::class, 'order'])
+    ->where('listing', '[0-9]{1,18}')
+    ->name('listings.photos.order');
 Route::resource('listings.photos', PhotoController::class)
     ->only(['store', 'update', 'destroy'])
     ->where(['listing' => '[0-9]{1,18}', 'photo' => '[0-9]{1,18}']);

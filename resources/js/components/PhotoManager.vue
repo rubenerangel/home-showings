@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, useForm } from '@inertiajs/vue3';
-import { computed, onUnmounted, ref, useId } from 'vue';
+import { computed, nextTick, onUnmounted, ref, useId } from 'vue';
 
 import { formatRoom } from '../format';
 import type { ListingPhoto } from '../types';
@@ -63,6 +63,75 @@ const fileError = (index: number) => form.errors[`photos.${index}.file`] ?? form
 const relabel = (photo: ListingPhoto, event: Event) =>
     router.patch(`${base.value}/${photo.id}`, { room: (event.target as HTMLSelectElement).value }, { preserveScroll: true });
 const remove = (photo: ListingPhoto) => router.delete(`${base.value}/${photo.id}`, { preserveScroll: true });
+
+// The order of the photos. Dragging is for a mouse: with touch or a keyboard there are buttons.
+const canDrag = window.matchMedia('(pointer: fine)').matches;
+const dragged = ref<number | null>(null);
+const over = ref<number | null>(null);
+const saving = ref(false);
+const orderError = ref<string>();
+
+const focusMoved = async (id: number, selector: string) => {
+    await nextTick();
+    const item = document.querySelector(`[data-photo="${id}"]`);
+    (item?.querySelector<HTMLElement>(selector) ?? item?.querySelector<HTMLElement>('select'))?.focus();
+};
+
+const move = (from: number, to: number, focus?: string) => {
+    if (saving.value || from === to) return;
+    const ids = props.photos.map((photo) => photo.id);
+    const [id] = ids.splice(from, 1);
+    ids.splice(to, 0, id);
+
+    let moved = false;
+    saving.value = true;
+    orderError.value = undefined;
+    router.put(
+        `${base.value}/order`,
+        { photos: ids },
+        {
+            preserveScroll: true,
+            onError: (errors) => (orderError.value = errors.photos ?? Object.values(errors)[0]),
+            onSuccess: () => {
+                moved = true;
+            },
+            // The buttons are disabled until then, and cannot take the focus.
+            onFinish: () => {
+                saving.value = false;
+                if (moved && focus) void focusMoved(id, focus);
+            },
+        },
+    );
+};
+
+const dragStart = (index: number, event: DragEvent) => {
+    if (saving.value) return event.preventDefault();
+    dragged.value = index;
+    event.dataTransfer!.effectAllowed = 'move';
+    // Firefox starts a drag only if there is data.
+    event.dataTransfer!.setData('text/plain', '');
+};
+const dragOver = (index: number, event: DragEvent) => {
+    // Anything that did not start here is not accepted.
+    if (dragged.value === null) return;
+    event.preventDefault();
+    over.value = index;
+};
+const drop = (index: number, event: DragEvent) => {
+    if (dragged.value === null) return;
+    event.preventDefault();
+    move(dragged.value, index);
+    dragEnd();
+};
+const dragEnd = () => {
+    dragged.value = null;
+    over.value = null;
+};
+/** Where the dragged photo would be, to mark the edge it goes to. */
+const marker = (index: number) => {
+    if (dragged.value === null || over.value !== index || dragged.value === index) return undefined;
+    return index < dragged.value ? 'before' : 'after';
+};
 </script>
 
 <template>
@@ -70,15 +139,62 @@ const remove = (photo: ListingPhoto) => router.delete(`${base.value}/${photo.id}
         <h2 :id="headingId" class="text-xl font-extrabold">Photos</h2>
         <p class="mt-1 text-gravel">Up to 5, JPG, PNG or WebP, 5&nbsp;MB each. The first one is the cover.</p>
 
+        <p v-if="photos.length > 1" class="mt-4 text-sm text-gravel">
+            {{ canDrag ? 'Drag a photo to change the order, or use its buttons.' : 'Use the buttons of a photo to change the order.' }}
+        </p>
+        <p v-if="orderError" role="alert" class="mt-2 text-sm font-bold text-stop">{{ orderError }}</p>
         <ol v-if="photos.length" class="mt-4 grid gap-4 sm:grid-cols-3">
-            <li v-for="(photo, index) in photos" :key="photo.id" class="space-y-2">
-                <div class="relative">
-                    <img :src="photo.url" :alt="formatRoom(photo.room)" width="1200" height="800" class="aspect-3/2 w-full rounded-md object-cover" />
+            <li
+                v-for="(photo, index) in photos"
+                :key="photo.id"
+                :data-photo="photo.id"
+                class="relative space-y-2"
+                @dragover="dragOver(index, $event)"
+                @drop="drop(index, $event)"
+            >
+                <span
+                    v-if="marker(index)"
+                    class="pointer-events-none absolute inset-y-0 z-10 w-1 rounded bg-sign"
+                    :class="marker(index) === 'before' ? '-left-2.5' : '-right-2.5'"
+                />
+                <div
+                    class="relative"
+                    :class="{ 'cursor-grab': canDrag && photos.length > 1, 'opacity-40': dragged === index }"
+                    :draggable="canDrag && photos.length > 1"
+                    @dragstart="dragStart(index, $event)"
+                    @dragend="dragEnd"
+                >
+                    <img :src="photo.url" :alt="formatRoom(photo.room)" draggable="false" width="1200" height="800" class="aspect-3/2 w-full rounded-md object-cover" />
                     <span v-if="index === 0" class="badge badge-caution absolute top-2 left-2">Cover</span>
                 </div>
                 <select :value="photo.room" :aria-label="`Room of photo ${index + 1}`" class="input" @change="relabel(photo, $event)">
                     <option v-for="room in rooms" :key="room" :value="room">{{ formatRoom(room) }}</option>
                 </select>
+                <div v-if="photos.length > 1" class="flex flex-wrap items-center gap-2">
+                    <button
+                        type="button"
+                        class="btn btn-small px-3"
+                        data-move="earlier"
+                        :aria-label="`Move photo ${index + 1} earlier`"
+                        :disabled="saving || index === 0"
+                        @click="move(index, index - 1, '[data-move=earlier]:enabled')"
+                    >
+                        <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-small px-3"
+                        data-move="later"
+                        :aria-label="`Move photo ${index + 1} later`"
+                        :disabled="saving || index === photos.length - 1"
+                        @click="move(index, index + 1, '[data-move=later]:enabled')"
+                    >
+                        <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <button v-if="index > 0" type="button" class="btn btn-small" :disabled="saving" @click="move(index, 0, 'select')">
+                        Make cover<span class="sr-only">, photo {{ index + 1 }}</span>
+                    </button>
+                </div>
                 <ConfirmButton
                     label="Remove"
                     :subject="`photo ${index + 1}`"
