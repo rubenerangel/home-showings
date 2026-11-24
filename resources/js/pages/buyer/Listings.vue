@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 
+import FactList from '../../components/FactList.vue';
 import PhotoCarousel from '../../components/PhotoCarousel.vue';
 import SlotPicker from '../../components/SlotPicker.vue';
-import { formatPrice, formatRooms, formatTimezone } from '../../format';
+import StreetSign from '../../components/StreetSign.vue';
+import { formatFacts, formatPrice } from '../../format';
 import type { ListingMatch } from '../../types';
 
 defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
@@ -11,29 +13,36 @@ defineProps<{ hasAvailability: boolean; listings: ListingMatch[] }>();
 
 <template>
     <Head title="Homes" />
-    <main class="mx-auto max-w-5xl px-4 py-8">
-        <h1 class="text-2xl font-semibold tracking-tight">Homes you can visit</h1>
-        <p class="mt-1 text-sm text-stone-600">Only homes with an opening that fits your availability. Times are local to each home.</p>
+    <main class="page">
+        <h1 class="title">Homes you can visit</h1>
+        <p class="lead">Only homes with an opening that fits your availability. Times are local to each home.</p>
 
-        <div v-if="!hasAvailability" class="card mt-6 p-8 text-center">
-            <p class="text-stone-600">Add your availability to see the homes you can visit.</p>
-            <Link href="/buyer/availability" class="btn btn-primary mt-4">Add availability</Link>
+        <div v-if="!hasAvailability" class="panel mt-8 px-6 py-12 text-center">
+            <p class="text-lg font-bold">When can you visit?</p>
+            <p class="mx-auto mt-1 max-w-[46ch] text-gravel">Add your availability to see the homes you can visit.</p>
+            <Link href="/buyer/availability" class="btn btn-primary mt-5">Add availability</Link>
         </div>
-        <div v-else-if="!listings.length" class="card mt-6 p-8 text-center">
-            <p class="text-stone-600">No home has an opening within your availability.</p>
-            <Link href="/buyer/availability" class="btn mt-4">Change availability</Link>
+        <div v-else-if="!listings.length" class="panel mt-8 px-6 py-12 text-center">
+            <p class="text-lg font-bold">No home has an opening within your availability.</p>
+            <p class="mx-auto mt-1 max-w-[46ch] text-gravel">Another day or a longer range may fit more homes.</p>
+            <Link href="/buyer/availability" class="btn mt-5">Change availability</Link>
         </div>
-        <ul v-else class="mt-6 grid items-start gap-6 md:grid-cols-2">
-            <li v-for="listing in listings" :key="listing.id" class="card overflow-hidden">
-                <PhotoCarousel :photos="listing.photos" :label="listing.address" />
-                <div class="p-5">
-                    <h2 class="font-medium">{{ listing.address }}</h2>
-                    <p class="text-sm text-stone-600">{{ listing.city }}, {{ listing.state }} · {{ formatTimezone(listing.timezone) }}</p>
-                    <p class="mt-2 text-sm">
-                        <span class="font-semibold">{{ formatPrice(listing.price) }}</span> · {{ formatRooms(listing.bedrooms, listing.bathrooms) }}
-                    </p>
-                    <p v-if="listing.description" class="mt-2 text-sm text-stone-700">{{ listing.description }}</p>
-                    <SlotPicker :listing="listing" class="mt-4 border-t border-stone-200 pt-4" />
+        <ul v-else class="mt-8 space-y-7">
+            <li v-for="listing in listings" :key="listing.id" class="panel grid overflow-clip md:grid-cols-[5fr_6fr]">
+                <div class="relative">
+                    <h2 class="pointer-events-none absolute top-4 left-4 z-10 max-w-[calc(100%-2rem)] sm:top-5 sm:left-5">
+                        <StreetSign>{{ listing.address }}</StreetSign>
+                    </h2>
+                    <PhotoCarousel :photos="listing.photos" :label="listing.address" class="md:aspect-auto md:h-full md:min-h-104" />
+                </div>
+                <div class="min-w-0 p-5 sm:p-7">
+                    <div class="flex flex-wrap items-baseline justify-between gap-x-4">
+                        <p class="text-lg font-bold">{{ listing.city }}, {{ listing.state }}</p>
+                        <p class="text-2xl font-extrabold tracking-tight tabular-nums">{{ formatPrice(listing.price) }}</p>
+                    </div>
+                    <FactList :facts="formatFacts(listing)" class="mt-1" />
+                    <p v-if="listing.description" class="mt-3 max-w-[52ch] break-words">{{ listing.description }}</p>
+                    <SlotPicker :listing="listing" class="mt-5 border-t border-curb pt-5" />
                 </div>
             </li>
         </ul>

@@ -23,22 +23,22 @@ const received = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeSty
 
 <template>
     <Head title="Notifications" />
-    <main class="mx-auto max-w-3xl px-4 py-8">
+    <main class="page-narrow">
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <h1 class="text-2xl font-semibold tracking-tight">Notifications</h1>
-            <button v-if="hasUnread" type="button" class="btn" @click="readAll">Mark all as read</button>
+            <h1 class="title">Notifications</h1>
+            <button v-if="hasUnread" type="button" class="btn btn-small" @click="readAll">Mark all as read</button>
         </div>
         <PushToggle v-if="pushPublicKey" :public-key="pushPublicKey" class="mt-6" />
-        <ul v-if="notifications.length" class="card mt-6 divide-y divide-stone-200">
-            <li v-for="notification in notifications" :key="notification.id" class="px-5 py-4 text-sm" :class="{ 'bg-teal-50': !notification.read }">
+        <ul v-if="notifications.length" class="panel mt-6 divide-y divide-curb overflow-clip">
+            <li v-for="notification in notifications" :key="notification.id" class="px-5 py-4 sm:px-6" :class="{ 'shadow-[inset_5px_0_0_var(--color-caution)]': !notification.read }">
                 <p>
-                    <span class="font-medium">{{ notification.name }}</span> {{ actions[notification.kind] }} at {{ notification.address }}
-                    <span v-if="!notification.read" class="ml-1 rounded-full bg-teal-800 px-2 py-0.5 text-xs font-semibold text-white">New</span>
+                    <span class="font-extrabold">{{ notification.name }}</span> {{ actions[notification.kind] }} at {{ notification.address }}
+                    <span v-if="!notification.read" class="badge badge-caution ml-1">New</span>
                 </p>
                 <HouseTime :starts-at="notification.starts_at" :ends-at="notification.ends_at" :timezone="notification.timezone" class="mt-1" />
-                <p class="mt-1 text-xs text-stone-600">Received {{ received.format(new Date(notification.created_at)) }}</p>
+                <p class="mt-1 text-sm text-gravel">Received {{ received.format(new Date(notification.created_at)) }}</p>
             </li>
         </ul>
-        <p v-else class="card mt-6 p-8 text-center text-stone-600">Nothing yet. Bookings and cancellations appear here.</p>
+        <p v-else class="panel mt-6 px-6 py-10 text-center text-gravel">Nothing yet. Bookings and cancellations appear here.</p>
     </main>
 </template>

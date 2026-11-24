@@ -2,8 +2,11 @@
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
+import ConfirmButton from '../../../components/ConfirmButton.vue';
 import FormField from '../../../components/FormField.vue';
 import HouseTime from '../../../components/HouseTime.vue';
+import StreetSign from '../../../components/StreetSign.vue';
+import { focusFirstError } from '../../../focus';
 import { formatTimezone } from '../../../format';
 import { formatSlots, formatWindow, windowPreview } from '../../../showingWindow';
 
@@ -43,6 +46,7 @@ const open = () =>
         preserveScroll: true,
         // The date stays, to add another window on the same day.
         onSuccess: () => form.reset('start', 'end'),
+        onError: focusFirstError,
     });
 
 const groups = computed(() => [
@@ -58,84 +62,107 @@ const statusOf = (showing: Showing) => {
 };
 
 const close = (window: Window) => router.post(`/seller/windows/${window.id}/close`, {}, { preserveScroll: true });
-const cancel = (showing: Showing) => {
-    if (confirm(`Cancel the showing with ${showing.buyer_name}? This time will stay closed in its window.`)) {
-        router.post(`/seller/showings/${showing.id}/cancel`, {}, { preserveScroll: true });
-    }
-};
+const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}/cancel`, {}, { preserveScroll: true });
 </script>
 
 <template>
     <Head :title="`Schedule of ${listing.address}`" />
-    <main class="mx-auto max-w-3xl space-y-6 px-4 py-8">
-        <div class="flex flex-wrap items-start justify-between gap-4">
+    <main class="page-narrow space-y-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
-                <h1 class="text-2xl font-semibold tracking-tight">Schedule</h1>
-                <p class="text-stone-600">{{ listing.address }}, {{ listing.city }}, {{ listing.state }}</p>
+                <p class="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <StreetSign small>{{ listing.address }}</StreetSign>
+                    <span>{{ listing.city }}, {{ listing.state }}</span>
+                </p>
+                <h1 class="title">Schedule</h1>
             </div>
             <div class="flex gap-3">
-                <Link :href="`/seller/listings/${listing.id}/edit`" class="btn">Edit home</Link>
-                <Link href="/seller" class="btn">Back to my homes</Link>
+                <Link :href="`/seller/listings/${listing.id}/edit`" class="btn btn-small">Edit home</Link>
+                <Link href="/seller" class="btn btn-small">Back to my homes</Link>
             </div>
         </div>
 
-        <section aria-labelledby="windows-heading" class="card p-5">
-            <h2 id="windows-heading" class="font-medium">Windows</h2>
-            <p class="mt-1 text-sm text-stone-600">
+        <section v-for="group in groups.slice(0, 1)" :key="group.title" :aria-label="group.title" class="panel p-5 sm:p-6">
+            <h2 class="text-xl font-extrabold">{{ group.title }}</h2>
+            <ul v-if="group.showings.length" class="mt-2 divide-y divide-curb">
+                <li v-for="showing in group.showings" :key="showing.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4 last:pb-0">
+                    <div>
+                        <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
+                        <p class="mt-1 flex flex-wrap items-center gap-2">{{ showing.buyer_name }} <span class="badge badge-sign">{{ statusOf(showing) }}</span></p>
+                    </div>
+                    <ConfirmButton
+                        v-if="showing.cancellable"
+                        label="Cancel"
+                        :subject="`the showing with ${showing.buyer_name}`"
+                        question="Cancel it? This time will stay closed in its window."
+                        confirm-label="Yes, cancel it"
+                        keep-label="Keep it"
+                        @confirm="cancel(showing)"
+                    />
+                </li>
+            </ul>
+            <p v-else class="mt-2 text-gravel">{{ group.empty }}</p>
+        </section>
+
+        <section aria-labelledby="windows-heading" class="panel p-5 sm:p-6">
+            <h2 id="windows-heading" class="text-xl font-extrabold">Windows</h2>
+            <p class="mt-1 text-gravel">
                 When the home can be visited, in its own time: {{ formatTimezone(listing.timezone) }}. Each showing takes
                 {{ listing.showing_duration_minutes }} minutes.
             </p>
 
-            <form class="mt-4 border-b border-stone-200 pb-5" novalidate @submit.prevent="open">
+            <form class="mt-5 border-b border-curb pb-6" novalidate @submit.prevent="open">
                 <div class="grid gap-4 sm:grid-cols-3">
-                    <FormField v-slot="{ control }" label="Date" :error="form.errors.date">
+                    <FormField v-slot="{ control }" label="Date" name="date" :error="form.errors.date">
                         <input v-bind="control" v-model="form.date" type="date" :min="today" />
                     </FormField>
-                    <FormField v-slot="{ control }" label="From" :error="form.errors.start">
+                    <FormField v-slot="{ control }" label="From" name="start" :error="form.errors.start">
                         <input v-bind="control" v-model="form.start" type="time" />
                     </FormField>
-                    <FormField v-slot="{ control }" label="To" :error="form.errors.end">
+                    <FormField v-slot="{ control }" label="To" name="end" :error="form.errors.end">
                         <input v-bind="control" v-model="form.end" type="time" />
                     </FormField>
                 </div>
-                <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
                     <button type="submit" class="btn btn-primary" :disabled="form.processing">Add window</button>
-                    <p role="status" class="text-sm" :class="preview?.fits === false ? 'text-red-700' : 'text-stone-600'">{{ preview?.text }}</p>
+                    <p role="status" class="font-semibold" :class="preview?.fits === false ? 'text-stop' : 'text-sign-deep'">{{ preview?.text }}</p>
                 </div>
             </form>
 
-            <ul v-if="windows.length" class="relative max-h-96 divide-y divide-stone-200 overflow-y-auto">
-                <li v-for="window in windows" :key="window.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 last:pb-0">
-                    <div class="text-sm">
-                        <p :class="window.past ? 'text-stone-600' : 'font-medium'">
+            <ul v-if="windows.length" class="relative -mr-3 max-h-112 divide-y divide-curb overflow-y-auto overscroll-contain pr-3">
+                <li v-for="window in windows" :key="window.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3.5 last:pb-0">
+                    <div class="tabular-nums">
+                        <p :class="window.past ? 'text-gravel' : 'font-bold'">
                             {{ formatWindow(window.date, window.start, window.end) }}<template v-if="window.past"> (past)</template>
                         </p>
-                        <p class="text-stone-600">
-                            {{ formatSlots(window.showings, window.unused_minutes) }}<template v-if="window.active_showings"> · {{ window.active_showings }} booked: cancel to close</template>
+                        <p class="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-gravel">
+                            {{ formatSlots(window.showings, window.unused_minutes) }}
+                            <span v-if="window.active_showings" class="badge badge-caution">{{ window.active_showings }} booked, cancel to close</span>
                         </p>
                     </div>
-                    <button type="button" class="btn py-1" :disabled="window.active_showings > 0" @click="close(window)">
-                        Close<span class="sr-only"> the window on {{ formatWindow(window.date, window.start, window.end) }}</span>
-                    </button>
+                    <ConfirmButton
+                        label="Close"
+                        :subject="`the window on ${formatWindow(window.date, window.start, window.end)}`"
+                        question="Close this window?"
+                        confirm-label="Yes, close it"
+                        keep-label="Keep it"
+                        :disabled="window.active_showings > 0"
+                        @confirm="close(window)"
+                    />
                 </li>
             </ul>
-            <p v-else class="pt-4 text-sm text-stone-600">No open windows, so buyers do not see this home.</p>
+            <p v-else class="pt-5 text-gravel">No open windows, so buyers do not see this home.</p>
         </section>
 
-        <section v-for="group in groups" :key="group.title" :aria-label="group.title" class="card p-5">
-            <h2 class="font-medium">{{ group.title }}</h2>
-            <ul v-if="group.showings.length" class="mt-2 divide-y divide-stone-200">
-                <li v-for="showing in group.showings" :key="showing.id" class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3 last:pb-0">
-                    <div>
-                        <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
-                        <p class="text-sm text-stone-600">{{ showing.buyer_name }} · {{ statusOf(showing) }}</p>
-                    </div>
-                    <button v-if="showing.cancellable" type="button" class="btn py-1" @click="cancel(showing)">
-                        Cancel<span class="sr-only"> the showing with {{ showing.buyer_name }}</span>
-                    </button>
+        <section v-for="group in groups.slice(1)" :key="group.title" :aria-label="group.title" class="panel p-5 sm:p-6">
+            <h2 class="text-xl font-extrabold">{{ group.title }}</h2>
+            <ul v-if="group.showings.length" class="mt-2 divide-y divide-curb">
+                <li v-for="showing in group.showings" :key="showing.id" class="py-4 last:pb-0">
+                    <HouseTime :starts-at="showing.starts_at" :ends-at="showing.ends_at" :timezone="showing.listing.timezone" />
+                    <p class="mt-1 flex flex-wrap items-center gap-2">{{ showing.buyer_name }} <span class="badge">{{ statusOf(showing) }}</span></p>
                 </li>
             </ul>
-            <p v-else class="mt-2 text-sm text-stone-600">{{ group.empty }}</p>
+            <p v-else class="mt-2 text-gravel">{{ group.empty }}</p>
         </section>
     </main>
 </template>

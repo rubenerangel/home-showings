@@ -2,8 +2,11 @@ const dollars = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'U
 
 export const formatPrice = (price: number) => dollars.format(price);
 
-export const formatRooms = (bedrooms: number, bathrooms: number) =>
-    `${bedrooms === 0 ? 'Studio' : `${bedrooms} bd`} · ${bathrooms} ba`;
+export const formatFacts = (listing: { bedrooms: number; bathrooms: number; timezone: string }) => [
+    listing.bedrooms === 0 ? 'Studio' : `${listing.bedrooms} bd`,
+    `${listing.bathrooms} ba`,
+    formatTimezone(listing.timezone),
+];
 
 const timezones: Record<string, string> = {
     'America/New_York': 'Eastern (New York)',

@@ -34,24 +34,24 @@ const cancelSwipe = () => {
 };
 
 const arrow =
-    'absolute top-1/2 z-10 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/90 text-stone-900 shadow hover:bg-white focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-teal-700';
+    'absolute top-1/2 z-10 flex size-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-asphalt transition-transform duration-150 ease-out hover:bg-white active:scale-95';
 </script>
 
 <template>
-    <div v-if="count === 0" class="flex aspect-3/2 items-center justify-center bg-stone-100 text-sm text-stone-600">No photos yet</div>
+    <div v-if="count === 0" class="flex aspect-3/2 items-center justify-center bg-curb/50 text-gravel">No photos yet</div>
     <section
         v-else
         aria-roledescription="carousel"
         :aria-label="`Photos of ${label}`"
-        class="relative aspect-3/2 overflow-hidden bg-stone-200"
+        class="relative aspect-3/2 overflow-hidden bg-curb"
         @keydown.left.prevent="move(-1)"
         @keydown.right.prevent="move(1)"
     >
         <template v-if="count > 1">
-            <button type="button" aria-label="Previous photo" :class="arrow" class="left-2" @click="move(-1)">
+            <button type="button" aria-label="Previous photo" :class="arrow" class="left-3" @click="move(-1)">
                 <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
             </button>
-            <button type="button" aria-label="Next photo" :class="arrow" class="right-2" @click="move(1)">
+            <button type="button" aria-label="Next photo" :class="arrow" class="right-3" @click="move(1)">
                 <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
             </button>
         </template>
@@ -79,14 +79,16 @@ const arrow =
                     :src="photo.url"
                     :alt="`${formatRoom(photo.room)} of ${label}`"
                     draggable="false"
+                    width="1200"
+                    height="800"
                     class="size-full object-cover"
                 />
-                <span aria-hidden="true" class="absolute bottom-2 left-2 rounded bg-stone-900/80 px-2 py-0.5 text-xs font-medium text-white">
+                <span aria-hidden="true" class="absolute bottom-3 left-3 rounded bg-asphalt/85 px-2 py-0.5 text-sm font-semibold text-white">
                     {{ formatRoom(photo.room) }}
                 </span>
             </div>
         </div>
-        <span aria-hidden="true" class="absolute right-2 bottom-2 rounded bg-stone-900/80 px-2 py-0.5 text-xs font-medium text-white">
+        <span aria-hidden="true" class="absolute right-3 bottom-3 rounded bg-asphalt/85 px-2 py-0.5 text-sm font-semibold text-white tabular-nums">
             {{ current + 1 }} / {{ count }}
         </span>
     </section>

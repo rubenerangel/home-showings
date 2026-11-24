@@ -4,6 +4,7 @@ import { computed, onUnmounted, ref, useId } from 'vue';
 
 import { formatRoom } from '../format';
 import type { ListingPhoto } from '../types';
+import ConfirmButton from './ConfirmButton.vue';
 
 const props = defineProps<{ listingId: number; photos: ListingPhoto[]; rooms: string[] }>();
 
@@ -65,52 +66,59 @@ const remove = (photo: ListingPhoto) => router.delete(`${base.value}/${photo.id}
 </script>
 
 <template>
-    <section :aria-labelledby="headingId" class="card p-5">
-        <h2 :id="headingId" class="font-medium">Photos</h2>
-        <p class="mt-1 text-sm text-stone-600">Up to 5, JPG, PNG or WebP, 5 MB each. The first one is the cover.</p>
+    <section :aria-labelledby="headingId" class="panel p-5 sm:p-6">
+        <h2 :id="headingId" class="text-xl font-extrabold">Photos</h2>
+        <p class="mt-1 text-gravel">Up to 5, JPG, PNG or WebP, 5&nbsp;MB each. The first one is the cover.</p>
 
         <ol v-if="photos.length" class="mt-4 grid gap-4 sm:grid-cols-3">
             <li v-for="(photo, index) in photos" :key="photo.id" class="space-y-2">
                 <div class="relative">
-                    <img :src="photo.url" :alt="formatRoom(photo.room)" class="aspect-3/2 w-full rounded-md object-cover" />
-                    <span v-if="index === 0" class="absolute top-2 left-2 rounded bg-teal-900 px-2 py-0.5 text-xs font-medium text-white">Cover</span>
+                    <img :src="photo.url" :alt="formatRoom(photo.room)" width="1200" height="800" class="aspect-3/2 w-full rounded-md object-cover" />
+                    <span v-if="index === 0" class="badge badge-caution absolute top-2 left-2">Cover</span>
                 </div>
-                <select :value="photo.room" :aria-label="`Room of photo ${index + 1}`" class="input py-1" @change="relabel(photo, $event)">
+                <select :value="photo.room" :aria-label="`Room of photo ${index + 1}`" class="input" @change="relabel(photo, $event)">
                     <option v-for="room in rooms" :key="room" :value="room">{{ formatRoom(room) }}</option>
                 </select>
-                <button type="button" class="btn w-full py-1" @click="remove(photo)">Remove<span class="sr-only"> photo {{ index + 1 }}</span></button>
+                <ConfirmButton
+                    label="Remove"
+                    :subject="`photo ${index + 1}`"
+                    question="Remove this photo?"
+                    confirm-label="Yes, remove it"
+                    keep-label="Keep it"
+                    @confirm="remove(photo)"
+                />
             </li>
         </ol>
 
         <form class="mt-4" novalidate @submit.prevent="upload">
             <template v-if="free > 0">
-                <label :for="inputId" class="mb-1 block text-sm font-medium">Add photos</label>
+                <label :for="inputId" class="mb-1.5 block text-[0.9375rem] font-bold">Add photos</label>
                 <input
                     :id="inputId"
                     type="file"
                     multiple
                     :accept="types.join(',')"
                     :disabled="form.processing"
-                    class="input file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-stone-200 file:px-3 file:py-1 file:text-sm"
+                    class="input py-2 file:mr-3 file:cursor-pointer file:rounded file:border-0 file:bg-mist file:px-3 file:py-1 file:text-sm file:font-bold"
                     @change="choose"
                 />
             </template>
-            <p v-else class="text-sm text-stone-600">That is the limit. Remove a photo to add another one.</p>
+            <p v-else class="text-gravel">That is the limit. Remove a photo to add another one.</p>
 
-            <div role="alert" class="text-sm text-red-700">
+            <div role="alert" class="text-sm font-bold text-stop">
                 <p v-for="problem in problems" :key="problem" class="mt-1">{{ problem }}</p>
                 <p v-if="form.errors.photos" class="mt-1">{{ form.errors.photos }}</p>
             </div>
 
             <ul v-if="form.photos.length" class="mt-4 space-y-3">
                 <li v-for="(photo, index) in form.photos" :key="previewOf(photo.file)" class="flex flex-wrap items-center gap-3">
-                    <img :src="previewOf(photo.file)" alt="" class="h-16 w-24 rounded-md object-cover" />
+                    <img :src="previewOf(photo.file)" alt="" width="96" height="64" class="h-16 w-24 rounded-md object-cover" />
                     <span class="min-w-0 flex-1 truncate text-sm">{{ photo.file.name }}</span>
-                    <select v-model="photo.room" :aria-label="`Room of ${photo.file.name}`" class="input w-auto py-1">
+                    <select v-model="photo.room" :aria-label="`Room of ${photo.file.name}`" class="input w-auto">
                         <option v-for="room in rooms" :key="room" :value="room">{{ formatRoom(room) }}</option>
                     </select>
-                    <button type="button" class="btn py-1" @click="discard(index)">Discard<span class="sr-only"> {{ photo.file.name }}</span></button>
-                    <p v-if="fileError(index)" class="w-full text-sm text-red-700">{{ fileError(index) }}</p>
+                    <button type="button" class="btn btn-small" @click="discard(index)">Discard<span class="sr-only"> {{ photo.file.name }}</span></button>
+                    <p v-if="fileError(index)" class="w-full text-sm font-bold text-stop">{{ fileError(index) }}</p>
                 </li>
             </ul>
             <div v-if="form.photos.length" class="mt-4 flex items-center gap-3">
