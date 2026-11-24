@@ -26,6 +26,10 @@ final class ListingInput
             'timezone' => ['bail', 'required', 'string', Rule::enum(HouseTimezone::class)],
             'showing_duration_minutes' => ['bail', 'required', 'integer', Rule::in(ListingOptions::DURATIONS)],
             'min_notice_hours' => ['bail', 'required', 'integer', Rule::in(ListingOptions::NOTICES)],
+        ], attributes: [
+            'timezone' => 'time zone',
+            'showing_duration_minutes' => 'showing duration',
+            'min_notice_hours' => 'minimum notice',
         ]);
     }
 }
