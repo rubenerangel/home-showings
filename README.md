@@ -131,6 +131,7 @@ curl -s http://localhost:8080/api/v1/buyer/showings -H "Authorization: Bearer $T
 | Seller | `GET /seller/listings/{listing}`, `PUT /seller/listings/{listing}` | A home with its photos and what is locked. Edits it, with all its fields |
 | Seller | `GET /seller/listings/{listing}/schedule` | Open windows and showings |
 | Seller | `POST /seller/listings/{listing}/photos` | Adds photos, as multipart: `photos[0][file]`, `photos[0][room]` |
+| Seller | `PUT /seller/listings/{listing}/photos/order` | Puts the photos in the order of `photos`, a list with the id of every one. The first is the cover |
 | Seller | `PATCH /seller/listings/{listing}/photos/{photo}`, `DELETE /seller/listings/{listing}/photos/{photo}` | Changes the `room`, or removes the photo |
 | Seller | `POST /seller/listings/{listing}/windows` | Opens a window: `date`, `start`, `end` |
 | Seller | `POST /seller/windows/{window}/close` | Closes a window |

@@ -70,6 +70,7 @@ A showing is **active** while it is confirmed and has not ended (`ends_at > now`
 - R17 Answers. For `/api/*`, when the request reaches the application: JSON with or without an Accept header, and never a redirect. Success `{"data"}`. Errors `{"message"}`, with no class names. 422 adds `errors`. 409 is exactly a case of `Refusal`, with its code in `reason` and the message of the web. Everything else invalid (R12, R13, R14, wrong credentials) is a 422. Someone else's, missing and malformed ids give the same 404. The other role is a 403. Wrong method is a 405.
 - R18 Limits. Login failures share the counter of the web: over it, 429 with Retry-After. 60 requests a minute for each account, and on guest routes for each address: 429. A bad token, an unknown path and a wrong method are not counted. A missing resource is.
 - R19 Text with a null byte, or that is not UTF-8, is refused in web and API.
+- R20 The seller can put the photos of a home in any order. The list sent has to be exactly the current photos, or nothing changes. Positions end from 1 to n. It takes turns with uploads, and with the removal of those photos.
 
 ## API
 
@@ -87,6 +88,7 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | Buyer | GET, POST /buyer/showings, POST /buyer/showings/{id}/cancel | 200, 201, 200 |
 | Seller | GET, POST /seller/listings, GET, PUT /seller/listings/{id} (with photos and locks) | 200, 201, 200, 200 |
 | Seller | POST /seller/listings/{id}/photos (multipart, answers all the photos), PATCH (room), DELETE /seller/listings/{id}/photos/{id} | 201, 200, 204 |
+| Seller | PUT /seller/listings/{id}/photos/order (`photos`, the ids in order, answers all the photos) | 200 |
 | Seller | GET /seller/listings/{id}/schedule (windows and showings) | 200 |
 | Seller | POST /seller/listings/{id}/windows, POST /seller/windows/{id}/close | 201, 200 |
 | Seller | POST /seller/showings/{id}/cancel | 200 |
@@ -141,6 +143,10 @@ Under `/api/v1`. Fields and input formats are the ones of the pages. Photo URLs 
 | 43 | Request 60 is accepted and 61 is a 429, two tokens of one account share the limit, and it ends after a minute |
 | 44 | The README documents every route (compared once with `route:list`) and has a curl example that was run against the demo data |
 | 45 | The design rules of CLAUDE.md that can be read from the code: an injected service is not `final`, nothing is looked up with `app()`, `resolve()` or `new`, a static method does not touch the database, a controller does not write, and only looks up by id what belongs to its user (R10) |
+| 46 | Photos: any order is kept as sent, numbered from 1, also from positions with gaps. Homes, editing, carousel and API show it, with the first as the cover. A new photo goes last |
+| 47 | Photos: someone else's home, missing and malformed ids: 404, nothing changes. Buyer 403. Without session or token: login or 401. Other methods: 405 |
+| 48 | Photos: a list that is not exactly the photos of the home is a 422 and nothing changes. While another request holds the home, it waits. A photo removed before its turn is a 422 |
+| 49 | Photos in the page: dragging, buttons to make cover and to move earlier or later, keyboard, one request at a time, focus, no overflow at 320 px |
 
 Push (25) starts only if everything else is finished and tested by 8 h 50 min of the 12 h budget.
 
