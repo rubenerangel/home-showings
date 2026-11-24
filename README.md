@@ -1,6 +1,6 @@
 # Home Showings
 
-Sellers publish the dates and times when their home can be visited. Buyers enter when they are free, see only the homes with an opening that fits, and book a showing.
+Sellers publish the dates and times when their home can be visited. Anyone can look at the homes. Buyers book a showing in the home they like, or enter when they are free and see only the homes with an opening that fits.
 
 Laravel 13, Inertia 3, Vue 3.5 with TypeScript, Tailwind 4 and PostgreSQL 18, on PHP 8.4.
 
@@ -33,22 +33,53 @@ Every demo account has the password `maple-street-48`. You can also create your 
 | Sellers | `grace@example.com`, `daniel@example.com`, `priya@example.com` |
 | Buyers | `emma@example.com`, `noah@example.com`, `olivia@example.com` |
 
-1. Log in as **Emma Clark** (buyer). Her availability is already there, so she sees homes with slots. Pick one and book it.
-2. Choose **Log out** and log in as the seller of that home (Grace Miller, Daniel Ortiz or Priya Shah). The notification is there. Open the schedule of the home, see the showing and cancel it.
-3. Back as Emma, a notification says so, and that slot is no longer offered.
-4. Log in as **Olivia Reed** (buyer) to see what someone without availability sees.
-5. As any seller, open **Notifications**, turn on push and close the tab. Book as a buyer from another browser or profile: the notification arrives. Logging out ends it.
+1. Open http://localhost:8080 without an account: every home with openings, by city. Open one, and choose **Book a showing**: it goes to register, and comes back to that home.
+2. Log in as **Emma Clark** (buyer). Her availability is already there, so **Homes that fit** has slots. Pick one and book it.
+3. Choose **Log out** and log in as the seller of that home (Grace Miller, Daniel Ortiz or Priya Shah). The notification is there. Open the schedule of the home, see the showing and cancel it.
+4. Back as Emma, a notification says so, and that slot is no longer offered.
+5. Log in as **Olivia Reed** (buyer) to see what someone without availability sees.
+6. As any seller, open **Notifications**, turn on push and close the tab. Book as a buyer from another browser or profile: the notification arrives. Logging out ends it.
+
+## Using it
+
+There are two roles and no administrator. An account has one role, chosen when registering, and it does not change.
+
+| | Anyone | Buyer | Seller |
+|---|---|---|---|
+| Homes, photos, price, and days with openings | Yes | Yes | Yes |
+| Times, and booking | No | Yes | No |
+| Availability, and the homes that fit it | No | Own | No |
+| Homes, photos, windows | No | No | Own |
+| Showings: see and cancel | No | Own | Of their homes |
+| Notifications, push and API tokens | No | Own | Own |
+
+**Creating an account.** Choose **Create an account**, then Buyer or Seller, and fill in name, email and a password of 8 characters or more. It signs in at once. Emails are not verified.
+
+**As a buyer**, in either of two ways:
+
+1. From a home: open it, pick a time, and book. Picking a time already says that you are free then.
+2. From your time: add it in **Availability**, and **Homes that fit** shows only the homes and times inside it.
+
+Then **My showings** has the showing, and cancelling it frees the time for others. There can be one active showing in each home.
+
+**As a seller:**
+
+1. **Add a home** with its address, price, time zone, showing duration and minimum notice.
+2. Add up to 5 photos and put them in order. The first one is the cover.
+3. In **Schedule**, add windows: a date, from and to. The page says how many showings fit before saving.
+4. **Notifications** says when someone books or cancels. Turn push on to know it with the tab closed.
+5. Cancel a showing if you have to: the buyer is told, and that time stays closed. A window with showings cannot be closed before.
 
 ## How it works
 
 ```
 app/Scheduling/       The rules. No HTTP in here.
   Interval, Availability, Slots, Slot, HouseClock       small immutable values
-  OpenSlots                                             the slots each listing has open for a buyer
+  OpenSlots                                             the slots that are open, for a buyer or for anyone
   BookShowing, CancelShowing, OpenWindow, CloseWindow,
   AddAvailability                                       the actions that write
   Refusal, Refused                                      why an action is refused, and its exception
-app/Listings/         Photos, and what can be edited while showings exist
+app/Listings/         The public catalog, photos, and what can be edited while showings exist
 app/Http/             Thin controllers, for the pages and under Api/: find the resource of this user, call an action.
                       Inputs (what is accepted) and presenters (what is answered) are shared by both
 app/Notifications/    In-app notifications, and their push version
@@ -57,7 +88,7 @@ app/Push/             Which browser is subscribed, and which push services are a
 resources/js/pages/   One Vue page per screen, under seller/ and buyer/
 database/             Migrations (with the constraints), factories, demo data
 tests/                Unit, Feature, and Feature/Concurrency with real processes
-docs/plan.md          The plan this was built from: rules R1 to R19 and the acceptance criteria
+docs/plan.md          The plan this was built from: rules R1 to R25 and the acceptance criteria
 ```
 
 ### Time
@@ -91,7 +122,7 @@ A browser is subscribed for one user. Logging out, or logging in as someone else
 
 ### Permissions
 
-Every query starts from the signed-in user, for example `$request->user()->listings()->findOrFail($id)`, so a resource of someone else is a 404. The area of the other role is a 403, and without a session every page of both areas redirects to the login.
+Every query starts from the signed-in user, for example `$request->user()->listings()->findOrFail($id)`, so a resource of someone else is a 404. The area of the other role is a 403, and without a session every page of both areas redirects to the login. The homes are public, and answer days and not times: the times of a home say when it is empty.
 
 Passwords are stored with bcrypt. Five failures in a minute for one email and address stop that email from that address until the minute ends. An unknown email and a wrong password get the same answer. The session id changes when logging in.
 
@@ -103,10 +134,11 @@ Three Claude Code skills were used as criteria, and each change was then checked
 
 | Skill | What it was used for | What came out of it |
 |---|---|---|
-| `frontend-design` | Direction: refine what exists instead of adding decoration | A few options side by side instead of a menu (duration, notice), a lock inside what cannot change, one chevron everywhere, the photo and its room as one piece |
+| `frontend-design` | Direction: refine what exists instead of adding decoration | A few options side by side instead of a menu (duration, notice), a lock inside what cannot change, one chevron everywhere, the height of a notification saying whether it was read |
 | `web-design-guidelines` | Reviewing the forms against its rules | The price formatted while it is typed, "Saving…" while it works, a warning before losing changes, `Select…`, errors with an icon and not only a color |
-| `emil-design-eng` | Movement and touch | Only `transform`, `opacity` and colors move, under 250 ms, leaving faster than entering. Photos slide to their new place with a mouse and do not with a keyboard. Hover effects only where there is a hover. Buttons answer to the press |
+| `emil-design-eng` | Movement and touch | Things move with `transform` and `opacity` only, under 250 ms, and leave faster than they enter. Fields change their border and halo. Photos slide to their new place with a mouse and do not with a keyboard. Hover effects only where there is a hover. Buttons answer to the press |
 
+- **Homes.** The main page goes by city, and a city takes the columns its homes need. The filter by state is in the address, so it can be shared. The whole tile is one link, with one focus ring.
 - **Forms.** One [FormField](resources/js/components/FormField.vue) and one [ChoiceField](resources/js/components/ChoiceField.vue) carry the label, the hint, the error and what screen readers need. After a refused form the focus goes to the first field to fix, and a message leaves when its field is edited.
 - **Photos.** Any order, by dragging with a mouse or with buttons. The new order shows at once and goes back if it is not accepted. Removing asks over the photo, so nothing else moves.
 - **Notifications.** Each one is a card with its own shadow, and the height says something: what was not read is higher, and settles when it is read. An icon tells a booking from a cancellation, so it is not only a color. Push is a switch that says On, Off or Blocked in words, color and shape, and keeps the focus while it works.
@@ -137,12 +169,14 @@ curl -s http://localhost:8080/api/v1/buyer/showings -H "Authorization: Bearer $T
 |---|---|---|
 | Guest | `POST /register` | Creates an account: `name`, `email`, `password`, `password_confirmation`, `role`, `device_name`. Answers its first token |
 | Guest | `POST /tokens` | Logs in: `email`, `password`, `device_name`. Answers a token |
+| Anyone | `GET /homes`, `GET /homes/{listing}` | Every available home, with `?state=CO` as a filter, and one of them with its days. No times |
 | Both | `DELETE /tokens/current`, `DELETE /tokens` | Revokes this token, or all the tokens of the account |
 | Both | `GET /me` | The account of the token |
 | Both | `GET /notifications`, `POST /notifications/read` | The latest 50 with the unread count. Marks all as read |
 | Buyer | `GET /buyer/availability`, `POST /buyer/availability` | Ranges. Adds one: `date`, `start`, `end`, on the clock of the house |
 | Buyer | `DELETE /buyer/availability/{range}` | Removes a range |
 | Buyer | `GET /buyer/listings` | The homes with an opening that fits, with their slots |
+| Buyer | `GET /buyer/homes/{listing}`, `POST /buyer/homes/{listing}/showings` | A home with its open slots, which ones fit, and the own showing. Books one: `window_id`, `starts_at` in UTC |
 | Buyer | `GET /buyer/showings`, `POST /buyer/showings` | Own showings. Books one: `window_id`, `starts_at` in UTC |
 | Buyer | `POST /buyer/showings/{showing}/cancel` | Cancels a showing |
 | Seller | `GET /seller/listing-options` | Accepted states, time zones, durations, notices and rooms |
@@ -156,7 +190,7 @@ curl -s http://localhost:8080/api/v1/buyer/showings -H "Authorization: Bearer $T
 | Seller | `POST /seller/windows/{window}/close` | Closes a window |
 | Seller | `POST /seller/showings/{showing}/cancel` | Cancels a showing |
 
-Success is `{"data": ...}`, with `has_availability` beside it in the matches and `unread` in the notifications, or an empty 204. Errors are `{"message": ...}`:
+Success is `{"data": ...}`, with `has_availability` beside it in the matches, `states` in the homes and `unread` in the notifications, or an empty 204. Errors are `{"message": ...}`:
 
 | Status | Meaning |
 |---|---|
@@ -165,7 +199,7 @@ Success is `{"data": ...}`, with `has_availability` beside it in the matches and
 | 404 | Someone else's resource, or one that does not exist |
 | 409 | A rule refused it. `reason` has the code, one of the cases of [Refusal](app/Scheduling/Refusal.php) |
 | 422 | Invalid input, with `errors` by field. Also a wrong password |
-| 429 | More than 60 requests in a minute, or five failed logins, which count together with the ones of the pages. `Retry-After` says how long |
+| 429 | More than 60 requests in a minute (the public routes count apart), or five failed logins, which count together with the ones of the pages. `Retry-After` says how long |
 
 A session of the pages does not open the API, so it needs no protection against CSRF.
 
@@ -181,7 +215,7 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D4 | "allowed showing dates and times" | Windows on specific dates | Weekly rules with exceptions: the text says dates, and rules need expansion and exceptions | Do the times repeat every week? |
 | D5 | Nothing about a seller changing a window that has showings | Closing refused while a showing is active. Windows are created and closed, not edited | Moving only the end: small gain for now. Cascade cancellation: breaks an immediate promise. Letting the showing outlive the window: a new window could produce overlapping slots | What happens to showings when the seller's plans change? |
 | D6 | "inputs their availability" | Saved per buyer, several ranges on specific dates | A search filter in the URL: the most literal reading, but it is retyped every time and the server cannot apply the same rule as the screen. Weekly pattern: sellers use dates, so it would need expansion and a horizon | One-off search, or a profile they come back to? |
-| D7 | "listings that have openings [...] that they can schedule showings on" | Only matching slots can be booked | Any slot of a matching home: makes the availability pointless | Should we also show times that do not fit? |
+| D7 | "listings that have openings [...] that they can schedule showings on" | From the search, only slots inside the availability. From the page of a home, any open slot: picking a time already says that the buyer is free then | Saving the picked time as availability: it would stay after cancelling, and match other homes. Only the search: nobody books a home that they have not seen | Should the search also show times that do not fit? |
 | D8 | Nothing about how many showings per home | One active showing per buyer and home | No limit: one buyer could take every slot. A new one is allowed after the first ends | Are second showings allowed before the first? |
 | D9 | "relevant information". Another project in the same document sets a minimum, this one does not | What someone needs to decide on a visit, plus up to 5 photos by room | A full portal page: the core here is scheduling | What detail would stop someone from asking for a visit? |
 | D10 | "their house" | Several listings per seller, never deleted | One per seller: costs the same and blocks whoever sells two | Can a seller have more than one? |
@@ -197,6 +231,8 @@ The brief leaves room. This is what I chose, what I discarded and why, and what 
 | D21 | Implied by "openings" | Row locks plus exclusion constraints | Constraints alone: cannot express "active now" or a window closing meanwhile. Locks alone: any code that forgets one allows a double booking | |
 | D22 | Only that the README "provides steps to run the code" | A small multi-stage image and a separate `test` stage | One image with everything: ships Composer, Node and tests. `php:8.4-cli-alpine` as the base: 121 MB against 50.6 MB for `alpine:3.22` with `php84` packages, both with `pdo_pgsql`, before adding the application (`docker images`, measured) | |
 | D23 | Nothing about other systems | `/api/v1` with personal tokens that expire in 30 days, over the same classes as the pages | Pages that consume the API: two steps for what one request does today. Tokens without expiry: a lost one would work forever. No API: other systems could not connect | Which system would connect first, and for whom does it act? |
+| D24 | "is shown listings" | A public main page with every available home, by state and city, besides the search by availability | Only the search: a buyer has to enter times before seeing a home. A map or a text search: more than five homes would need them | Are homes found here, or do buyers arrive from another site? |
+| D25 | Nothing about visitors | A guest sees address, photos, price and the days with openings, and the times only as a buyer | Showing the times to anyone: they tell when a home is empty. Hiding the address: the home could not be recognized | Can the address be public? |
 
 ## Docker image
 
@@ -231,17 +267,21 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 ## How it was built
 
 1. A written plan first, in [docs/plan.md](docs/plan.md): decisions, rules with examples, and numbered acceptance criteria.
-2. For matching, booking, notifications, push, accounts and the API: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
+2. Built with Claude Code. For matching, booking, notifications, push, accounts, the API and the public homes: tests from the criteria, seen failing, approved by me and frozen. Then the smallest code that passes, and a review by an agent that receives only the plan and the diff.
 3. The agent that wrote the code could not edit the frozen tests or finish with a red suite. The gate is in [.claude/hooks](.claude/hooks): one script that I run records the SHA-256 of the tests, a `PreToolUse` hook denies edits to them, and a `Stop` hook checks the hashes and runs the suite. The shell rule of the `PreToolUse` hook matches names, so it prevents accidents. The hash check is the guarantee.
 4. Rules and locks were broken on purpose, one at a time, to confirm that some test fails.
 5. Screens and push were also driven in real browsers, with mouse, keyboard and touch. That found what the tests with a fake push service could not: the image lacked the BCMath extension that the encryption needs.
+6. Two agents with a clean context, which only read: `qa` looks for edge cases in a plan before there is any test, and `reviewer` checks a change with only the plan and the diff. Both are in [.claude/agents](.claude/agents). Changes that were only of the screens did not go through them.
+7. The design rules are in [CLAUDE.md](CLAUDE.md), and `ArchitectureTest` checks the ones that can be read from the code.
+8. Three design skills were the criteria for the screens: see [Interface](#interface). Context7 was the source of the documentation of Docker, Sanctum and Inertia.
 
 ## Known limitations
 
 - Emails are not verified, and a forgotten password cannot be recovered. Registering tells whether an email has an account. Two tabs share one session, so logging in as someone else in one changes the other.
 - In the API, the tokens of an account cannot be listed, only revoked one by one or all together. Lists have no pages, and any origin may call it from a browser, always with a token. A request for a path that ends in `.php`, or over 32 MB, is answered by nginx in HTML.
 - The demo accounts share a password that is written above.
-- A buyer whose free time almost fits a slot does not see the home.
+- The main page has no map, text search or pages. The address and the photos of an available home are public.
+- In **Homes that fit**, a buyer whose free time almost fits a slot does not see the home.
 - With homes in two zones, a range matches local time in both, which does not mean there is time to travel.
 - Adjacent showings in different homes leave no travel time.
 - In-app notifications reach only people who open the application. Push needs a browser that supports it, permission in the browser and in the settings of the operating system, and an internet connection to the push service of that browser.
