@@ -31,7 +31,7 @@ services:
       target: runtime
     environment: *app-environment
     ports:
-      # Loopback only: there are no passwords.
+      # Loopback only: the demo accounts share a password that is in the README.
       - "127.0.0.1:${APP_PORT:-8080}:8080"
     volumes:
       - keys:/var/lib/home-showings
