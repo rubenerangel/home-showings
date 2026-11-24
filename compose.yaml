@@ -60,6 +60,8 @@ services:
 
   db:
     <<: *postgres
+    # A refused row would leave the email and the password hash in the log.
+    command: ["postgres", "-c", "log_error_verbosity=terse"]
     volumes:
       - db:/var/lib/postgresql
     restart: unless-stopped
