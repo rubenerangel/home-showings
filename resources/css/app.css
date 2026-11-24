@@ -1,19 +1,204 @@
 @import 'tailwindcss';
 
+/* Derived from the lettering of US road signs. The metrics are overridden so capitals sit in the middle of a line. */
+@font-face {
+    font-family: 'Overpass';
+    src: url('../fonts/overpass-latin.woff2') format('woff2');
+    font-weight: 400 800;
+    font-display: swap;
+    ascent-override: 98%;
+    descent-override: 28%;
+    line-gap-override: 0%;
+}
+
+@theme {
+    --font-sans: 'Overpass', ui-sans-serif, system-ui, sans-serif;
+
+    /* As on a road: green guides, yellow warns, red stops. */
+    --color-sign: #0a5c3b;
+    --color-sign-deep: #06402a;
+    --color-sign-line: #b9d6c9;
+    --color-sign-wash: #e3f0ea;
+    --color-caution: #f7c948;
+    --color-caution-ink: #3b2a00;
+    --color-stop: #a8231b;
+    --color-stop-line: #f0c3bf;
+    --color-stop-wash: #fdeeec;
+
+    --color-asphalt: #17252a;
+    --color-gravel: #4c5d65;
+    --color-curb: #d3dde0;
+    --color-mist: #eef3f4;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+    html {
+        color-scheme: light;
+        scroll-padding-top: 1rem;
+    }
+
+    body {
+        @apply bg-mist text-asphalt antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    legend {
+        text-wrap: balance;
+    }
+
+    button,
+    a,
+    select,
+    input,
+    label {
+        touch-action: manipulation;
+    }
+
+    :focus-visible {
+        outline: 3px solid var(--color-sign);
+        outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        ::before,
+        ::after {
+            animation-duration: 0.01ms !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
 @layer components {
+    .page {
+        @apply mx-auto max-w-6xl px-4 pt-8 pb-16 sm:px-6 sm:pt-11;
+    }
+
+    .page-narrow {
+        @apply mx-auto max-w-3xl px-4 pt-8 pb-16 sm:px-6 sm:pt-11;
+    }
+
+    .title {
+        @apply text-3xl leading-tight font-extrabold tracking-tight sm:text-[2.5rem];
+    }
+
+    .lead {
+        @apply mt-2 max-w-[60ch] text-gravel;
+    }
+
+    .panel {
+        @apply rounded-[10px] border border-curb bg-white;
+    }
+
+    /* The one bold element: a street sign. */
+    .sign {
+        @apply inline-block max-w-full rounded-[7px] bg-sign px-4.5 py-1.5 text-xl leading-tight font-bold text-balance break-words text-white sm:text-2xl;
+        box-shadow: inset 0 0 0 2px var(--color-sign), inset 0 0 0 4px #fff;
+    }
+
+    .sign-small {
+        @apply px-3.5 py-1 text-base sm:text-base;
+        box-shadow: inset 0 0 0 1.5px var(--color-sign), inset 0 0 0 3px #fff;
+    }
+
     .btn {
-        @apply inline-flex cursor-pointer items-center justify-center rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:opacity-60;
+        @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md border-[1.5px] border-[#758c93] bg-white px-4 text-[0.9375rem] font-bold;
+        transition: transform 140ms var(--ease-out), background-color 120ms ease, border-color 120ms ease;
+
+        &:hover:not(:disabled) {
+            @apply border-asphalt bg-mist;
+        }
+
+        &:active:not(:disabled) {
+            transform: scale(0.97);
+        }
+
+        &:disabled {
+            @apply cursor-not-allowed opacity-55;
+        }
+    }
+
+    .btn-small {
+        @apply min-h-9 px-3.5 text-sm pointer-coarse:min-h-11;
     }
 
     .btn-primary {
-        @apply border-teal-800 bg-teal-800 text-white hover:bg-teal-900;
+        @apply border-sign bg-sign text-white;
+
+        &:hover:not(:disabled) {
+            @apply border-sign-deep bg-sign-deep;
+        }
     }
 
-    .card {
-        @apply rounded-lg border border-stone-200 bg-white shadow-xs;
+    .btn-stop {
+        @apply border-stop text-stop;
+
+        &:hover:not(:disabled) {
+            @apply border-stop bg-stop text-white;
+        }
+    }
+
+    .link {
+        @apply cursor-pointer font-bold text-sign underline decoration-2 underline-offset-4 hover:text-sign-deep;
+    }
+
+    .slot {
+        /* Room for the booking bar that sticks below. */
+        @apply scroll-mb-44 scroll-mt-20 min-h-11 cursor-pointer rounded-md border-[1.5px] border-[#6b9583] bg-white px-2 text-[0.9375rem] font-bold text-sign-deep tabular-nums;
+        transition: transform 140ms var(--ease-out), background-color 120ms ease, border-color 120ms ease;
+
+        &:hover {
+            @apply border-sign bg-sign-wash;
+        }
+
+        &:active {
+            transform: scale(0.97);
+        }
+
+        &[aria-pressed='true'] {
+            @apply border-sign bg-sign text-white;
+        }
+    }
+
+    .badge {
+        @apply inline-flex items-center rounded-full bg-mist px-2.5 py-0.5 text-sm font-bold text-gravel;
+    }
+
+    .badge-sign {
+        @apply bg-sign-wash text-sign-deep;
+    }
+
+    .badge-caution {
+        @apply bg-caution text-caution-ink;
     }
 
     .input {
-        @apply w-full rounded-md border border-stone-400 bg-white px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-teal-700 disabled:cursor-not-allowed disabled:border-stone-200 disabled:bg-stone-100 disabled:text-stone-600 aria-invalid:border-red-700;
+        @apply min-h-11 w-full rounded-md border-[1.5px] border-[#758c93] bg-white px-3 text-base text-asphalt hover:border-asphalt disabled:cursor-not-allowed disabled:border-curb disabled:bg-mist disabled:text-gravel aria-invalid:border-stop;
     }
+
+    textarea.input {
+        @apply py-2.5;
+    }
+}
+
+/* What appears because of an action. It only moves a little, and leaves faster than it comes. */
+.appear-enter-active {
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+}
+
+.appear-leave-active {
+    transition: opacity 120ms ease;
+}
+
+.appear-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.appear-leave-to {
+    opacity: 0;
 }
