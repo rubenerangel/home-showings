@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Buyer;
 
 use App\Enums\Role;
-use App\Enums\ShowingStatus;
+use App\Http\BookingInput;
 use App\Http\Controllers\Controller;
+use App\Http\Presenter;
 use App\Models\Showing;
 use App\Scheduling\BookShowing;
 use App\Scheduling\CancelShowing;
@@ -16,32 +17,19 @@ use Inertia\Response;
 
 class ShowingController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, Presenter $presenter): Response
     {
         $now = CarbonImmutable::now();
-        $showings = $request->user()->showings()->with('listing')->orderBy('starts_at')->orderBy('id')->get();
 
         return Inertia::render('buyer/Showings', [
-            'showings' => $showings->map(fn (Showing $showing) => [
-                'id' => $showing->id,
-                'listing' => $showing->listing->only('address', 'city', 'state', 'timezone'),
-                'starts_at' => $showing->starts_at->toIso8601ZuluString(),
-                'ends_at' => $showing->ends_at->toIso8601ZuluString(),
-                'status' => $showing->status,
-                'upcoming' => $showing->status === ShowingStatus::Confirmed && $showing->ends_at > $now,
-                'cancellable' => $showing->status === ShowingStatus::Confirmed && $showing->starts_at > $now,
-            ]),
+            'showings' => $request->user()->orderedShowings()->map(fn (Showing $showing) => $presenter->showing($showing, $now)),
         ]);
     }
 
     public function store(Request $request, BookShowing $bookShowing): RedirectResponse
     {
-        $data = $request->validate([
-            'window_id' => ['required', 'integer'],
-            'starts_at' => ['required', 'date_format:Y-m-d\TH:i:s\Z'],
-        ]);
-
-        $bookShowing->handle($request->user(), (int) $data['window_id'], CarbonImmutable::parse($data['starts_at']));
+        $booking = BookingInput::from($request);
+        $bookShowing->handle($request->user(), $booking->windowId, $booking->startsAt);
         Inertia::flash('message', 'Showing booked. The seller has been notified.');
 
         return back();

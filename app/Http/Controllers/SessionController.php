@@ -2,20 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\Accounts\Credentials;
+use App\Accounts\CheckCredentials;
+use App\Http\AccountInput;
 use App\Push\BrowserSubscription;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SessionController extends Controller
 {
-    private const MAX_FAILURES = 5;
-
     public function __construct(private readonly BrowserSubscription $browserSubscription) {}
 
     public function create(): Response
@@ -23,30 +20,17 @@ class SessionController extends Controller
         return Inertia::render('Login');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, CheckCredentials $checkCredentials): RedirectResponse
     {
-        Credentials::lowerEmail($request);
-        $credentials = $request->validate([
-            'email' => Credentials::EMAIL_RULES,
-            'password' => ['bail', 'required', 'string'],
-        ]);
-
-        // Counted before checking, so attempts sent at once do not get past the limit.
-        $key = 'login:'.hash('sha256', $credentials['email'].'|'.$request->ip());
-        if (RateLimiter::hit($key) > self::MAX_FAILURES) {
-            throw ValidationException::withMessages(['email' => 'Too many attempts. Try again in a minute.']);
-        }
-
+        $credentials = AccountInput::login($request);
         $previous = $request->user();
-        if (! Auth::attempt($credentials)) {
-            throw ValidationException::withMessages(['email' => 'The email or the password is not right.']);
-        }
-        RateLimiter::clear($key);
+        $user = $checkCredentials->handle($credentials['email'], $credentials['password'], $request->ip());
 
+        Auth::login($user);
         $this->browserSubscription->forget($previous, $request->session());
         $request->session()->regenerate();
 
-        return redirect()->route($request->user()->role->home());
+        return redirect()->route($user->role->home());
     }
 
     public function destroy(Request $request): RedirectResponse

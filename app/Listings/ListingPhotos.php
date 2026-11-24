@@ -20,16 +20,6 @@ final class ListingPhotos
 
     public const TOO_MANY = 'A home can have up to 5 photos.';
 
-    /** @return array{id: int, url: string, room: string} */
-    public static function present(ListingPhoto $photo): array
-    {
-        return [
-            'id' => $photo->id,
-            'url' => Storage::disk(self::DISK)->url($photo->path),
-            'room' => $photo->room->value,
-        ];
-    }
-
     /** @param list<array{file: UploadedFile, room: string}> $photos */
     public function add(Listing $listing, array $photos): void
     {

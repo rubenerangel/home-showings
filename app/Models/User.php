@@ -10,7 +10,10 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
+use Laravel\Sanctum\HasApiTokens;
 use NotificationChannels\WebPush\HasPushSubscriptions;
 
 #[Fillable(['name', 'email', 'password', 'role'])]
@@ -18,7 +21,7 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasPushSubscriptions, Notifiable;
+    use HasApiTokens, HasFactory, HasPushSubscriptions, Notifiable;
 
     /** There is no "remember me". */
     protected $rememberTokenName = '';
@@ -40,6 +43,12 @@ class User extends Authenticatable
         return $this->hasMany(AvailabilityRange::class, 'buyer_id');
     }
 
+    /** @return Collection<int, AvailabilityRange> past ranges are left out (R12) */
+    public function currentAvailability(): Collection
+    {
+        return $this->availabilityRanges()->current()->orderBy('local_starts_at')->orderBy('id')->get();
+    }
+
     /** Past ranges are left out (R12). */
     public function availability(): Availability
     {
@@ -50,5 +59,17 @@ class User extends Authenticatable
     public function showings(): HasMany
     {
         return $this->hasMany(Showing::class, 'buyer_id');
+    }
+
+    /** @return Collection<int, Showing> */
+    public function orderedShowings(): Collection
+    {
+        return $this->showings()->with('listing')->orderBy('starts_at')->orderBy('id')->get();
+    }
+
+    /** @return Collection<int, DatabaseNotification> */
+    public function latestNotifications(): Collection
+    {
+        return $this->notifications()->limit(50)->get();
     }
 }
