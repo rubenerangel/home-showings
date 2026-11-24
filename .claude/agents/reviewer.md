@@ -14,6 +14,12 @@ Check, in this order:
 3. Authorization: can a user reach data or actions of another user?
 4. Tests that would still pass if the rule they cover were removed.
 5. Code outside the scope of the plan.
+6. Design, without overengineering: SOLID, DRY and dependency injection, so tests and mocks stay simple.
+   - What touches the database, the session, the disk, the network or the clock is an injected instance. A static method is fine if it is pure or a named constructor. Do not ask to wrap every facade.
+   - A business rule written twice. Code that only looks alike is fine.
+   - A class with two unrelated reasons to change.
+   - Overengineering is a finding too: an interface with one implementation and no test that needs it, layers that only forward, mocks of locks, transactions or constraints.
+   - It is blocking only if a criterion cannot be tested or a business rule is duplicated. Otherwise it is minor. Never ask for changes to code outside the diff.
 
 For each finding give the file and line, the concrete input or state that fails, and the wrong result. Open the files around the diff to confirm it before reporting. Do not report style.
 
