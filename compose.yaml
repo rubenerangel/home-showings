@@ -59,6 +59,7 @@ services:
     environment:
       <<: *app-environment
       APP_ENV: testing
+      LOG_CHANNEL: "null"
       DB_HOST: db-test
     depends_on:
       db-test:

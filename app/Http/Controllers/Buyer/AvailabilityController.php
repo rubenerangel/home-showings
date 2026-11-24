@@ -40,6 +40,7 @@ class AvailabilityController extends Controller
             'local_starts_at' => $interval->start,
             'local_ends_at' => $interval->end,
         ]);
+        Inertia::flash('message', 'Availability added.');
 
         return back();
     }
@@ -47,6 +48,7 @@ class AvailabilityController extends Controller
     public function destroy(Request $request, int $range): RedirectResponse
     {
         $request->user()->availabilityRanges()->findOrFail($range)->delete();
+        Inertia::flash('message', 'Availability removed.');
 
         return back();
     }

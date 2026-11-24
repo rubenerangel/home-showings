@@ -11,10 +11,14 @@ final class LocalIntervalInput
     public static function from(Request $request): Interval
     {
         $data = $request->validate([
-            'date' => ['required', 'date_format:Y-m-d'],
-            'start' => ['required', 'date_format:H:i'],
-            'end' => ['required', 'date_format:H:i', 'after:start'],
-        ]);
+            'date' => ['bail', 'required', 'date_format:Y-m-d'],
+            'start' => ['bail', 'required', 'date_format:H:i'],
+            'end' => ['bail', 'required', 'date_format:H:i', 'after:start'],
+        ], [
+            'required' => 'Choose a :attribute.',
+            'date_format' => 'Choose a valid :attribute.',
+            'end.after' => 'The end must be after the start.',
+        ], ['start' => 'start time', 'end' => 'end time']);
 
         return Interval::parse("{$data['date']} {$data['start']}", "{$data['date']} {$data['end']}");
     }

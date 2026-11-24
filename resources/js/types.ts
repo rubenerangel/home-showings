@@ -67,3 +67,13 @@ export interface ShowingNotification {
     read: boolean;
     created_at: string;
 }
+
+export interface BuyerShowing {
+    id: number;
+    listing: Pick<ListingFields, 'address' | 'city' | 'state' | 'timezone'>;
+    starts_at: string;
+    ends_at: string;
+    status: 'confirmed' | 'cancelled_by_buyer' | 'cancelled_by_seller';
+    upcoming: boolean;
+    cancellable: boolean;
+}

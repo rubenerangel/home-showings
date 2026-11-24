@@ -6,7 +6,11 @@ import type { SessionUser } from '../types';
 
 const navigation: Record<SessionUser['role'], { label: string; href: string }[]> = {
     seller: [{ label: 'My homes', href: '/seller' }],
-    buyer: [{ label: 'Homes', href: '/buyer' }],
+    buyer: [
+        { label: 'Homes', href: '/buyer' },
+        { label: 'Availability', href: '/buyer/availability' },
+        { label: 'My showings', href: '/buyer/showings' },
+    ],
 };
 
 const page = usePage();
@@ -14,6 +18,7 @@ const page = usePage();
 const user = computed(() => page.props.user!);
 const links = computed(() => navigation[user.value.role]);
 const unread = computed(() => page.props.unreadNotifications ?? 0);
+const refusal = computed(() => page.props.errors.refusal);
 const path = computed(() => page.url.split('?')[0]);
 </script>
 
@@ -31,7 +36,11 @@ const path = computed(() => page.url.split('?')[0]);
                 >
                     {{ link.label }}
                 </Link>
-                <Link :href="`/${user.role}/notifications`" class="rounded py-1 hover:underline">
+                <Link
+                    :href="`/${user.role}/notifications`"
+                    :aria-current="path === `/${user.role}/notifications` ? 'page' : undefined"
+                    class="rounded py-1 hover:underline aria-[current=page]:font-semibold aria-[current=page]:text-teal-800"
+                >
                     Notifications
                     <span v-if="unread > 0" class="ml-1 rounded-full bg-teal-800 px-2 py-0.5 text-xs font-semibold text-white">
                         {{ unread }}<span class="sr-only"> unread</span>
@@ -50,6 +59,9 @@ const path = computed(() => page.url.split('?')[0]);
         <p v-if="page.flash.message" class="mt-4 rounded-md border border-teal-200 bg-teal-50 px-4 py-2 text-sm text-teal-900">
             {{ page.flash.message }}
         </p>
+    </div>
+    <div role="alert" class="mx-auto max-w-5xl px-4">
+        <p v-if="refusal" class="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900">{{ refusal }}</p>
     </div>
     <slot />
 </template>
