@@ -165,4 +165,6 @@ Manifests are copied before the source, and Composer and npm use BuildKit cache 
 
 ## Credits
 
+The typeface is [Overpass](https://github.com/RedHatOfficial/Overpass), under the SIL Open Font License ([resources/fonts/OFL.txt](resources/fonts/OFL.txt)), served from the application.
+
 Demo photos from [Unsplash](https://unsplash.com), credited in [database/seeders/photos/CREDITS.md](database/seeders/photos/CREDITS.md).
