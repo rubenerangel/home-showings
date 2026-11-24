@@ -25,6 +25,7 @@ class RegistrationController extends Controller
         $user = $registerUser->handle(AccountInput::registration($request));
         Auth::login($user);
         $request->session()->regenerate();
+        Inertia::clearHistory();
 
         return $this->afterSignIn->go($user, $request->input('home'));
     }

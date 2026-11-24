@@ -30,6 +30,7 @@ class SessionController extends Controller
         Auth::login($user);
         $this->browserSubscription->forget($previous, $request->session());
         $request->session()->regenerate();
+        Inertia::clearHistory();
 
         return $this->afterSignIn->go($user, $request->input('home'));
     }
@@ -40,6 +41,7 @@ class SessionController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        Inertia::clearHistory();
 
         return redirect()->route('homes');
     }

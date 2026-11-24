@@ -3,6 +3,7 @@
 use App\Accounts\LockedOut;
 use App\Http\Middleware\EnsureRole;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\KeepOutOfCaches;
 use App\Http\Middleware\RedirectSignedIn;
 use App\Scheduling\Refused;
 use Illuminate\Foundation\Application;
@@ -21,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [HandleInertiaRequests::class]);
+        $middleware->web(append: [KeepOutOfCaches::class, HandleInertiaRequests::class]);
         $middleware->alias(['role' => EnsureRole::class, 'guest' => RedirectSignedIn::class]);
         // A guest who tried to book comes back to that home.
         $middleware->redirectGuestsTo(fn (Request $request) => route('login', $request->routeIs('homes.book') ? ['home' => $request->route('listing')] : []));
