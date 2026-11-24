@@ -50,6 +50,7 @@ if [ "$1" = "serve" ]; then
     load_keys
     php artisan optimize
     php artisan migrate --force
+    echo "database is listening and its schema is up to date"
     php artisan db:seed --force
     serve
 fi
