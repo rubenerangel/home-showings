@@ -4,6 +4,7 @@ import { Link, useForm } from '@inertiajs/vue3';
 import { useAccountSubmit } from '../accountSubmit';
 import { clearEdited } from '../clearEdited';
 import AccountPage from '../components/AccountPage.vue';
+import FieldError from '../components/FieldError.vue';
 import FormField from '../components/FormField.vue';
 import type { SessionUser } from '../types';
 
@@ -51,7 +52,7 @@ const { busy, submit } = useAccountSubmit(
                         </span>
                     </label>
                 </div>
-                <p v-if="form.errors.role" id="role-error" class="mt-1.5 text-sm font-bold text-stop">{{ form.errors.role }}</p>
+                <FieldError id="role-error" :text="form.errors.role" />
             </fieldset>
             <FormField v-slot="{ control }" label="Name" name="name" :error="form.errors.name" hint="Shown to the other side of a showing">
                 <input v-bind="control" v-model="form.name" type="text" maxlength="255" autocomplete="name" />
@@ -65,7 +66,7 @@ const { busy, submit } = useAccountSubmit(
             <FormField v-slot="{ control }" label="Repeat the password" name="password_confirmation" :error="form.errors.password_confirmation">
                 <input v-bind="control" v-model="form.password_confirmation" type="password" autocomplete="new-password" />
             </FormField>
-            <button type="submit" class="btn btn-primary w-full sm:w-auto" :disabled="busy">Create account</button>
+            <button type="submit" class="btn btn-primary w-full sm:w-auto" :disabled="busy">{{ busy ? 'Creating…' : 'Create account' }}</button>
         </form>
         <template #other>Already have one? <Link href="/" class="link">Log in</Link></template>
     </AccountPage>

@@ -34,6 +34,11 @@
 }
 
 @layer base {
+    :root {
+        --icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234c5d65' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        --icon-lock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234c5d65' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6.5 11h11v8.5h-11zM8.5 11V8a3.5 3.5 0 0 1 7 0v3'/%3E%3C/svg%3E");
+    }
+
     html {
         color-scheme: light;
         scroll-padding-top: 1rem;
@@ -152,7 +157,7 @@
     }
 
     .photo-room {
-        @apply min-h-11 w-full cursor-pointer rounded-b-[9px] border-r-12 border-transparent bg-transparent pl-3 text-[0.9375rem] font-semibold;
+        @apply min-h-11 w-full rounded-b-[9px] bg-transparent pl-3.5 text-[0.9375rem] font-semibold;
 
         &:focus-visible {
             /* Inside: the photo is right above. */
@@ -245,7 +250,86 @@
     }
 
     .input {
-        @apply min-h-11 w-full rounded-md border-[1.5px] border-[#758c93] bg-white px-3 text-base text-asphalt hover:border-asphalt disabled:cursor-not-allowed disabled:border-curb disabled:bg-mist disabled:text-gravel aria-invalid:border-stop;
+        @apply min-h-12 w-full rounded-lg border-[1.5px] border-[#758c93] bg-white px-3.5 text-base text-asphalt;
+        transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+
+        /* A halo that belongs to the field. The outline is kept for forced colors, where shadows are not drawn. */
+        &:focus-visible {
+            @apply border-sign;
+            outline: 2px solid transparent;
+            box-shadow: inset 0 0 0 1px var(--color-sign), 0 0 0 4px var(--color-sign-line);
+        }
+
+        &[aria-invalid] {
+            @apply border-stop bg-stop-wash;
+        }
+
+        &[aria-invalid]:focus-visible {
+            box-shadow: inset 0 0 0 1px var(--color-stop), 0 0 0 4px var(--color-stop-line);
+        }
+
+        &:disabled {
+            @apply cursor-not-allowed border-curb bg-mist pr-11 text-gravel opacity-100;
+            background-image: var(--icon-lock);
+            background-position: right 0.875rem center;
+            background-size: 1.125rem;
+            background-repeat: no-repeat;
+        }
+    }
+
+    select.input,
+    .photo-room {
+        @apply cursor-pointer appearance-none pr-11;
+        background-image: var(--icon-chevron);
+        background-position: right 0.875rem center;
+        background-size: 1.125rem;
+        background-repeat: no-repeat;
+    }
+
+    select.input:disabled {
+        @apply cursor-not-allowed;
+        background-image: var(--icon-lock);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .input:hover:not(:disabled, :focus-visible, [aria-invalid]) {
+            @apply border-asphalt;
+        }
+    }
+
+    /* A few options side by side: all in sight, and chosen at once. */
+    .choices {
+        @apply grid auto-cols-fr grid-flow-col overflow-clip rounded-lg border-[1.5px] border-[#758c93] bg-white;
+        transition: border-color 140ms ease, box-shadow 140ms ease;
+
+        &:has(:focus-visible) {
+            @apply border-sign;
+            outline: 2px solid transparent;
+            box-shadow: 0 0 0 4px var(--color-sign-line);
+        }
+
+        &:has([aria-invalid]) {
+            @apply border-stop;
+        }
+    }
+
+    .choice {
+        @apply flex min-h-[2.8125rem] cursor-pointer items-center justify-center border-l-[1.5px] border-curb px-1 text-center text-[0.9375rem] font-semibold tabular-nums first:border-l-0;
+        transition: background-color 140ms ease, color 140ms ease;
+
+        &:has(:checked) {
+            @apply border-sign bg-sign text-white;
+        }
+
+        &:has(:checked) + .choice {
+            @apply border-sign;
+        }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .choice:hover:not(:has(:checked)) {
+            @apply bg-sign-wash text-sign-deep;
+        }
     }
 
     textarea.input {

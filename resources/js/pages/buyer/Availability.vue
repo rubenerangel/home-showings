@@ -46,7 +46,7 @@ const format = (range: Range) => {
                     <input v-bind="control" v-model="form.end" type="time" />
                 </FormField>
             </div>
-            <button type="submit" class="btn btn-primary mt-5" :disabled="form.processing">Add availability</button>
+            <button type="submit" class="btn btn-primary mt-5" :disabled="form.processing">{{ form.processing ? 'Adding…' : 'Add availability' }}</button>
         </form>
 
         <ul v-if="ranges.length" class="panel mt-6 divide-y divide-curb">

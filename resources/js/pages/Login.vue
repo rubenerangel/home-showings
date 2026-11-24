@@ -21,7 +21,7 @@ const { busy, submit } = useAccountSubmit(
             <FormField v-slot="{ control }" label="Password" name="password" :error="form.errors.password">
                 <input v-bind="control" v-model="form.password" type="password" autocomplete="current-password" />
             </FormField>
-            <button type="submit" class="btn btn-primary w-full sm:w-auto" :disabled="busy">Log in</button>
+            <button type="submit" class="btn btn-primary w-full sm:w-auto" :disabled="busy">{{ busy ? 'Logging in…' : 'Log in' }}</button>
         </form>
         <template #other>New here? <Link href="/register" class="link">Create an account</Link></template>
     </AccountPage>

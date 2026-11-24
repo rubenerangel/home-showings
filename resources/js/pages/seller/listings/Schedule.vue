@@ -124,7 +124,7 @@ const cancel = (showing: Showing) => router.post(`/seller/showings/${showing.id}
                     </FormField>
                 </div>
                 <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <button type="submit" class="btn btn-primary" :disabled="form.processing">Add window</button>
+                    <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ form.processing ? 'Adding…' : 'Add window' }}</button>
                     <p role="status" class="font-semibold" :class="preview?.fits === false ? 'text-stop' : 'text-sign-deep'">{{ preview?.text }}</p>
                 </div>
             </form>

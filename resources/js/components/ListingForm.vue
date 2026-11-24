@@ -2,10 +2,12 @@
 import { Link, useForm } from '@inertiajs/vue3';
 import { watch } from 'vue';
 
-import { formatTimezone } from '../format';
+import { formatPrice, formatTimezone } from '../format';
 import type { Listing, ListingFields, ListingLocks, ListingOptions } from '../types';
 import { clearEdited } from '../clearEdited';
 import { focusFirstError } from '../focus';
+import { useUnsavedChanges } from '../unsavedChanges';
+import ChoiceField from './ChoiceField.vue';
 import FormField from './FormField.vue';
 
 const props = defineProps<{ options: ListingOptions; listing?: Listing; locks?: ListingLocks }>();
@@ -36,6 +38,12 @@ const form = useForm<FormFields>(
 );
 
 const clearError = clearEdited(form);
+useUnsavedChanges(() => form.isDirty && !form.processing);
+
+const durations = props.options.durations.map((minutes) => ({ value: minutes, text: `${minutes} min`, label: `${minutes} minutes` }));
+const notices = props.options.notices.map((hours) =>
+    hours === 0 ? { value: 0, text: 'None', label: 'No notice' } : { value: hours, text: `${hours} h`, label: `${hours} hours` },
+);
 
 const locationHint = 'Locked while the home has upcoming showings.';
 const timezoneHint = 'Locked: the home has an open window or a showing.';
@@ -50,7 +58,7 @@ watch(
 );
 
 const submit = () => {
-    if (props.listing) form.put(`/seller/listings/${props.listing.id}`, { preserveScroll: true, onError: focusFirstError });
+    if (props.listing) form.put(`/seller/listings/${props.listing.id}`, { preserveScroll: true, onSuccess: () => form.defaults(), onError: focusFirstError });
     else form.post('/seller/listings', { onError: focusFirstError });
 };
 </script>
@@ -68,7 +76,7 @@ const submit = () => {
                 </FormField>
                 <FormField v-slot="{ control }" label="State" name="state" :error="form.errors.state" class="sm:col-span-2">
                     <select v-bind="control" v-model="form.state" :disabled="locks?.location">
-                        <option value="" disabled>Select</option>
+                        <option value="" disabled>Select…</option>
                         <option v-for="state in options.states" :key="state">{{ state }}</option>
                     </select>
                 </FormField>
@@ -81,7 +89,7 @@ const submit = () => {
                     class="sm:col-span-6"
                 >
                     <select v-bind="control" v-model="form.timezone" :disabled="locks?.timezone">
-                        <option value="" disabled>Select</option>
+                        <option value="" disabled>Select…</option>
                         <option v-for="timezone in options.timezones" :key="timezone" :value="timezone">{{ formatTimezone(timezone) }}</option>
                     </select>
                 </FormField>
@@ -91,7 +99,14 @@ const submit = () => {
         <fieldset class="panel p-5 sm:p-6">
             <legend class="float-left mb-4 w-full text-xl font-extrabold">Home</legend>
             <div class="clear-both grid gap-4 sm:grid-cols-3">
-                <FormField v-slot="{ control }" label="Price (USD)" name="price" :error="form.errors.price">
+                <FormField
+                    v-slot="{ control }"
+                    label="Price (USD)"
+                    name="price"
+                    prefix="$"
+                    :error="form.errors.price"
+                    :hint="form.price === '' ? undefined : formatPrice(form.price)"
+                >
                     <input v-bind="control" v-model="form.price" type="number" min="1" step="1" inputmode="numeric" />
                 </FormField>
                 <FormField v-slot="{ control }" label="Bedrooms" name="bedrooms" :error="form.errors.bedrooms" hint="0 for a studio">
@@ -109,21 +124,27 @@ const submit = () => {
         <fieldset class="panel p-5 sm:p-6">
             <legend class="float-left mb-4 w-full text-xl font-extrabold">Showings</legend>
             <div class="clear-both grid gap-4 sm:grid-cols-2">
-                <FormField v-slot="{ control }" label="Showing duration" name="showing_duration_minutes" :error="form.errors.showing_duration_minutes" hint="Applies to new windows only">
-                    <select v-bind="control" v-model="form.showing_duration_minutes">
-                        <option v-for="minutes in options.durations" :key="minutes" :value="minutes">{{ minutes }} minutes</option>
-                    </select>
-                </FormField>
-                <FormField v-slot="{ control }" label="Minimum notice" name="min_notice_hours" :error="form.errors.min_notice_hours" hint="How long before a showing it can still be booked">
-                    <select v-bind="control" v-model="form.min_notice_hours">
-                        <option v-for="hours in options.notices" :key="hours" :value="hours">{{ hours === 0 ? 'No notice' : `${hours} hours` }}</option>
-                    </select>
-                </FormField>
+                <ChoiceField
+                    v-model="form.showing_duration_minutes"
+                    label="Showing duration"
+                    name="showing_duration_minutes"
+                    :options="durations"
+                    :error="form.errors.showing_duration_minutes"
+                    hint="Applies to new windows only"
+                />
+                <ChoiceField
+                    v-model="form.min_notice_hours"
+                    label="Minimum notice"
+                    name="min_notice_hours"
+                    :options="notices"
+                    :error="form.errors.min_notice_hours"
+                    hint="How long before a showing it can still be booked"
+                />
             </div>
         </fieldset>
 
-        <div class="flex gap-3">
-            <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ listing ? 'Save changes' : 'Create home' }}</button>
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="btn btn-primary" :disabled="form.processing">{{ form.processing ? (listing ? 'Saving…' : 'Creating…') : listing ? 'Save changes' : 'Create home' }}</button>
             <Link href="/seller" class="btn">{{ listing ? 'Back to my homes' : 'Cancel' }}</Link>
         </div>
     </form>
