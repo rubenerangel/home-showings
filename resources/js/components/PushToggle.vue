@@ -54,7 +54,7 @@ const disable = () =>
         <div>
             <p class="font-bold">Push notifications on this device</p>
             <p class="text-sm text-gravel">
-                <template v-if="state === 'on'">On. They arrive even with this tab closed, until you switch user.</template>
+                <template v-if="state === 'on'">On. They arrive even with this tab closed, until you log out.</template>
                 <template v-else-if="state === 'off'">Off. Turn them on to hear about changes with this tab closed.</template>
                 <template v-else-if="state === 'blocked'">Blocked in the settings of this browser.</template>
                 <template v-else>This browser does not support them.</template>
