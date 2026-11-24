@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Seller\ListingController;
 use App\Http\Controllers\Seller\PhotoController;
+use App\Http\Controllers\Seller\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [ListingController::class, 'index'])->name('home');
@@ -13,3 +14,6 @@ Route::resource('listings', ListingController::class)
 Route::resource('listings.photos', PhotoController::class)
     ->only(['store', 'update', 'destroy'])
     ->where(['listing' => '[0-9]{1,18}', 'photo' => '[0-9]{1,18}']);
+Route::get('/listings/{listing}/schedule', [ScheduleController::class, 'show'])
+    ->where('listing', '[0-9]{1,18}')
+    ->name('listings.schedule');

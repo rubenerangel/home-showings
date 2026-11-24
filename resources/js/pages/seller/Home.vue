@@ -25,7 +25,8 @@ defineProps<{ listings: (Listing & { cover: Photo | null })[] }>();
                         <span class="font-semibold">{{ formatPrice(listing.price) }}</span> · {{ formatRooms(listing.bedrooms, listing.bathrooms) }}
                     </p>
                     <p class="mt-1 text-sm text-stone-600">{{ listing.showing_duration_minutes }} min showings · {{ formatTimezone(listing.timezone) }}</p>
-                    <div class="mt-4">
+                    <div class="mt-4 flex gap-3">
+                        <Link :href="`/seller/listings/${listing.id}/schedule`" class="btn">Schedule<span class="sr-only"> of {{ listing.address }}</span></Link>
                         <Link :href="`/seller/listings/${listing.id}/edit`" class="btn">Edit<span class="sr-only"> {{ listing.address }}</span></Link>
                     </div>
                 </div>
